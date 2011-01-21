@@ -26,6 +26,10 @@
 #include <linux/videodev2.h>
 
 #include <SDL/SDL.h>
+#include <SDL_image.h>
+
+#define CAM_OTHER 0
+#define CAM_LOGITEC 1
 
 #define THEWIDTH 640//1280//160
 #define THEHEIGHT 480//720//120
@@ -48,6 +52,8 @@ static io_method	io		= IO_METHOD_MMAP;
 static int              fd              = -1;
 struct buffer *         buffers         = NULL;
 static unsigned int     n_buffers       = 0;
+
+static int              cam             = 0;
 
 static SDL_Surface * mainSurface;
 static SDL_Overlay * sdlOverlay;
@@ -154,16 +160,71 @@ process_image                   (const void *           p,
   int i;
   if(method==IO_METHOD_MMAP)
     {
-      //printf("%i\n", p);
-      SDL_LockSurface(mainSurface);
-      SDL_LockYUVOverlay(sdlOverlay);
-      
-      memcpy(sdlOverlay->pixels[0], p, len);
+      if(CAM_LOGITEC==cam)
+	{
+	  SDL_RWops * rw;
+	  SDL_Surface  * pSjpeg;
+	  //SDL_Rect theRect;
+	  rw = SDL_RWFromConstMem(p,len);
+	  if(0==rw)
+	    {
+	      printf("error SDL_RWFromConstMem\n");
+	      errno_exit ("SDL stuff");
+	    }
+	  if(IMG_isJPG(rw))
+	    {
+	      // printf("sample.jpg is a JPG file.\n");
+	    }
+	  else
+	    {
+	      printf("sample.jpg is not a JPG file, or JPG support is not available.\n");
+	      SDL_FreeRW(rw);
+	      errno_exit ("SDL IMG_isJPG");
+	    }
+	  
 
-      SDL_UnlockYUVOverlay(sdlOverlay);
-      SDL_UnlockSurface(mainSurface);
+	  pSjpeg = IMG_LoadJPG_RW(rw);
 
-      SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
+	  /*pSjpeg=IMG_Load("test.jpg");
+	  if(!pSjpeg) {
+	    printf("IMG_Load: %s\n", IMG_GetError());
+	    errno_exit("IMG_Load failed\n");
+	    }*/
+	  
+	  if(0==pSjpeg)
+	    {
+	      printf("IMG_LoadJPG_RW: %s\n", IMG_GetError());
+	      SDL_FreeRW(rw);
+	      errno_exit ("SDL IMG_isJPG");
+	    }
+
+	  /* Clean up after ourselves */
+	  SDL_FreeRW(rw);
+
+	  //SDL_LockSurface(mainSurface);
+	  if(SDL_BlitSurface(pSjpeg, 0, mainSurface,0)) 
+	    {
+	      printf("SDL_BlitSurface failed\n");
+	      errno_exit ("SDL_BlitSurface");
+	    }
+	  //SDL_UnlockSurface(mainSurface);
+	  SDL_Flip(mainSurface);
+	  SDL_FreeSurface(pSjpeg);
+	  //SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
+	}
+      else
+	{
+	  //printf("%i\n", p);
+	  SDL_LockSurface(mainSurface);
+	  SDL_LockYUVOverlay(sdlOverlay);
+	  
+	  memcpy(sdlOverlay->pixels[0], p, len);
+	  
+	  SDL_UnlockYUVOverlay(sdlOverlay);
+	  SDL_UnlockSurface(mainSurface);
+	  
+	  SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
+	}
       /*
  app->image = SDL_CreateRGBSurfaceFrom( app->frame->data,
                                            app->frame->width,
@@ -634,7 +695,14 @@ init_device                     (void)
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         fmt.fmt.pix.width       = THEWIDTH;//160;//320; 
         fmt.fmt.pix.height      = THEHEIGHT;//120;//240;
-        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;//V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;////
+	if(CAM_LOGITEC==cam)
+	  {
+	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
+	  }
+	else
+	  {
+	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;
+	  }
         fmt.fmt.pix.field       = V4L2_FIELD_NONE;//V4L2_FIELD_INTERLACED;
 	//	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
@@ -713,11 +781,12 @@ usage                           (FILE *                 fp,
                  "-m | --mmap          Use memory mapped buffers\n"
                  "-r | --read          Use read() calls\n"
                  "-u | --userp         Use application allocated buffers\n"
+		 "-c | --cam           Use logitec ebcam\n"
                  "",
 		 argv[0]);
 }
 
-static const char short_options [] = "d:hmru";
+static const char short_options [] = "d:hmruc";
 
 static const struct option
 long_options [] = {
@@ -726,6 +795,7 @@ long_options [] = {
         { "mmap",       no_argument,            NULL,           'm' },
         { "read",       no_argument,            NULL,           'r' },
         { "userp",      no_argument,            NULL,           'u' },
+	{ "cam",      no_argument,            NULL,           'c' },
         { 0, 0, 0, 0 }
 };
 
@@ -769,6 +839,10 @@ main                            (int                    argc,
                 case 'u':
                         io = IO_METHOD_USERPTR;
 			break;
+		case 'c':
+                        cam = CAM_LOGITEC;
+			break;
+
 
                 default:
                         usage (stderr, argc, argv);

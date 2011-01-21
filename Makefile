@@ -23,7 +23,7 @@ CFLAGS+=-g -c -Wall
 #CFLAGS+=-DVERSIONSNUMMER=$(VERSIONSNUMMER)
 
 
-LDFLAGS+=-lSDL
+LDFLAGS+=-lSDL -lSDL_image
 
 OBJS = capture.o 
 
