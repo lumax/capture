@@ -27,8 +27,8 @@
 
 #include <SDL/SDL.h>
 
-#define THEWIDTH 1280//160
-#define THEHEIGHT 720//120
+#define THEWIDTH 640//1280//160
+#define THEHEIGHT 480//720//120
 
 #define CLEAR(x) memset (&(x), 0, sizeof (x))
 
@@ -181,6 +181,10 @@ process_image                   (const void *           p,
       */
        fputc ('.', stdout);
         fflush (stdout);
+    }
+  else if(method==IO_METHOD_USERPTR)
+    {
+      
     }
   else
     {
@@ -630,7 +634,7 @@ init_device                     (void)
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         fmt.fmt.pix.width       = THEWIDTH;//160;//320; 
         fmt.fmt.pix.height      = THEHEIGHT;//120;//240;
-        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;////
+        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;//V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;////
         fmt.fmt.pix.field       = V4L2_FIELD_NONE;//V4L2_FIELD_INTERLACED;
 	//	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
