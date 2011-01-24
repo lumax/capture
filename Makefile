@@ -31,5 +31,5 @@ OBJS = capture.o
 include $(MAKE_DIR)/global.mak
 
 public:
-	cp $(PROJECT_NAME) /home/lumax/eldk/arm/usr/work/uvc/$(PROJECT_NAME)
-	cp capture.c /home/lumax/eldk/arm/usr/work/uvc/capture.c
+	cp $(PROJECT_NAME) /opt/eldk/arm/usr/work/capture/$(PROJECT_NAME)
+	cp capture.c /opt/eldk/arm/usr/work/capture/capture.c

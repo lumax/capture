@@ -31,8 +31,8 @@
 #define CAM_OTHER 0
 #define CAM_LOGITEC 1
 
-#define THEWIDTH 640//1280//160
-#define THEHEIGHT 480//720//120
+#define THEWIDTH 800//640//1280//160
+#define THEHEIGHT 448//480//720//120
 
 #define CLEAR(x) memset (&(x), 0, sizeof (x))
 
@@ -245,7 +245,58 @@ process_image                   (const void *           p,
     }
   else if(method==IO_METHOD_USERPTR)
     {
-      
+        if(CAM_LOGITEC==cam)
+	{
+	  SDL_RWops * rw;
+	  SDL_Surface  * pSjpeg;
+	  //SDL_Rect theRect;
+	  rw = SDL_RWFromConstMem(p,len);
+	  if(0==rw)
+	    {
+	      printf("error SDL_RWFromConstMem\n");
+	      errno_exit ("SDL stuff");
+	    }
+	  if(IMG_isJPG(rw))
+	    {
+	      // printf("sample.jpg is a JPG file.\n");
+	    }
+	  else
+	    {
+	      printf("sample.jpg is not a JPG file, or JPG support is not available.\n");
+	      SDL_FreeRW(rw);
+	      errno_exit ("SDL IMG_isJPG");
+	    }
+	  
+
+	  pSjpeg = IMG_LoadJPG_RW(rw);
+
+	  /*pSjpeg=IMG_Load("test.jpg");
+	  if(!pSjpeg) {
+	    printf("IMG_Load: %s\n", IMG_GetError());
+	    errno_exit("IMG_Load failed\n");
+	    }*/
+	  
+	  if(0==pSjpeg)
+	    {
+	      printf("IMG_LoadJPG_RW: %s\n", IMG_GetError());
+	      SDL_FreeRW(rw);
+	      errno_exit ("SDL IMG_isJPG");
+	    }
+
+	  /* Clean up after ourselves */
+	  SDL_FreeRW(rw);
+
+	  //SDL_LockSurface(mainSurface);
+	  if(SDL_BlitSurface(pSjpeg, 0, mainSurface,0)) 
+	    {
+	      printf("SDL_BlitSurface failed\n");
+	      errno_exit ("SDL_BlitSurface");
+	    }
+	  //SDL_UnlockSurface(mainSurface);
+	  SDL_Flip(mainSurface);
+	  SDL_FreeSurface(pSjpeg);
+	  //SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
+	}    
     }
   else
     {
@@ -355,7 +406,7 @@ mainloop                        (void)
 {
 	unsigned int count;
 
-        count = 100;
+        count = 300;
 
         while (count-- > 0) {
                 for (;;) {
