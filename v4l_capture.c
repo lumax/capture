@@ -28,14 +28,6 @@
 #include <SDL/SDL.h>
 #include <SDL_image.h>
 
-
-
-#define THEWIDTH 160//800//640//1280//160
-#define THEHEIGHT 120//448//480//720//120
-
-#define SDLWIDTH 800
-#define SDLHEIGHT 600
-
 #define CLEAR(x) memset (&(x), 0, sizeof (x))
 
 #define CAM_OTHER 0
@@ -54,62 +46,34 @@ struct buffer {
 
 struct v4l_capture
 {
- char *          dev_name;
- io_method	 io;
- int             fd;
- struct buffer * buffers;
- unsigned int    n_buffers;
- int cam;
+  char *          dev_name;
+  io_method	 io;
+  int             fd;
+  struct buffer * buffers;
+  unsigned int    n_buffers;
+  int cam;
+  SDL_Surface * mainSurface;
+  SDL_Overlay * sdlOverlay;
+  SDL_Rect sdlRect;
 };
 
-static struct v4l_capture cap;
-
-
-
-static SDL_Surface * mainSurface;
-static SDL_Overlay * sdlOverlay;
-static SDL_Rect sdlRect = {.w=THEWIDTH,.h=THEHEIGHT,.x=50,.y=50};
+//static SDL_Overlay * sdlOverlay;
+//static SDL_Rect sdlRect = {.w=THEWIDTH,.h=THEHEIGHT,.x=50,.y=50};
 
 int initSDL(void)
 {
-    int bpp = 32;
- 
 
-    // Start SDL
-
-    if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-    {
-        fprintf( stderr, "Failed to initialise SDL: %s\n", SDL_GetError() );
-        return -1;
-    }
-    atexit( SDL_Quit );
-
-    // Create a window the size of the display
-
-    SDL_WM_SetCaption( "camview", NULL );
-
-    mainSurface = SDL_SetVideoMode( SDLWIDTH,
-				    SDLHEIGHT,
-                                    bpp, SDL_SWSURFACE );
-
-    if ( mainSurface == NULL )
-    {
-        fprintf( stderr, "Failed to set video mode: %s\n", SDL_GetError() );
-        return -1;
-    }
-    sdlOverlay = SDL_CreateYUVOverlay(THEWIDTH,THEHEIGHT,SDL_YVYU_OVERLAY ,mainSurface);
-    printf("Overlay planes = %i\n",sdlOverlay->planes);
-    //sdlOverlay->planes = 3;
-
-    // Ignore alpha channel, go opaque
-    //    SDL_SetAlpha( app->image, 0, 0 );
-
-    //    gettimeofday( &app->timestamp, NULL );
     return 0;
 }
 
 
-int init_v4l_caputre(struct v4l_capture * cap)
+void init_v4l_caputre(struct v4l_capture * cap,	\
+		     Sint16 x,			\
+		     Sint16 y,			\
+		     Uint16 w,			\
+		     Uint16 h,			\
+		     SDL_Surface * display	\
+		     )
 {
   cap->dev_name        = 0;
   cap->io	= IO_METHOD_MMAP;
@@ -117,7 +81,20 @@ int init_v4l_caputre(struct v4l_capture * cap)
   cap->buffers         = 0;
   cap->n_buffers       = 0;
   cap->cam             =CAM_OTHER;
-    return 0;
+  cap->mainSurface = display;
+  cap->sdlRect.w = w;
+  cap->sdlRect.h = h;
+  cap->sdlRect.x = x;
+  cap->sdlRect.y = y;
+  
+  cap->sdlOverlay = SDL_CreateYUVOverlay(w,			\
+					 h,			\
+					 SDL_YVYU_OVERLAY,	\
+					 cap->mainSurface);
+  //printf("Overlay planes = %i\n",sdlOverlay->planes);
+  //sdlOverlay->planes = 3; 
+  // Ignore alpha channel, go opaque
+  //    SDL_SetAlpha( app->image, 0, 0 );
 }
 
 
@@ -186,13 +163,13 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
 	  SDL_FreeRW(rw);
 
 	  //SDL_LockSurface(mainSurface);
-	  if(SDL_BlitSurface(pSjpeg, 0, mainSurface,0)) 
+	  if(SDL_BlitSurface(pSjpeg, 0, cap->mainSurface,0)) 
 	    {
 	      printf("SDL_BlitSurface failed\n");
 	      errno_exit ("SDL_BlitSurface");
 	    }
 	  //SDL_UnlockSurface(mainSurface);
-	  SDL_Flip(mainSurface);
+	  SDL_Flip(cap->mainSurface);
 	  SDL_FreeSurface(pSjpeg);
 	  //SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
 	}
@@ -205,15 +182,15 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
 	  tmprect.y=sdlRect.y=THEHEIGHT;
 	  */
 	  //printf("%i\n", p);
-	  SDL_LockSurface(mainSurface);
-	  SDL_LockYUVOverlay(sdlOverlay);
+	  SDL_LockSurface(cap->mainSurface);
+	  SDL_LockYUVOverlay(cap->sdlOverlay);
 	  
-	  memcpy(sdlOverlay->pixels[0], p, len);
+	  memcpy(cap->sdlOverlay->pixels[0], p, len);
 	  
-	  SDL_UnlockYUVOverlay(sdlOverlay);
-	  SDL_UnlockSurface(mainSurface);
+	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
+	  SDL_UnlockSurface(cap->mainSurface);
 	  
-	  SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
+	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
 	  //SDL_DisplayYUVOverlay(sdlOverlay, &tmprect);
 	}
       /*
@@ -269,13 +246,13 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
 	  SDL_FreeRW(rw);
 
 	  //SDL_LockSurface(mainSurface);
-	  if(SDL_BlitSurface(pSjpeg, 0, mainSurface,0)) 
+	  if(SDL_BlitSurface(pSjpeg, 0, cap->mainSurface,0)) 
 	    {
 	      printf("SDL_BlitSurface failed\n");
 	      errno_exit ("SDL_BlitSurface");
 	    }
 	  //SDL_UnlockSurface(mainSurface);
-	  SDL_Flip(mainSurface);
+	  SDL_Flip(cap->mainSurface);
 	  SDL_FreeSurface(pSjpeg);
 	  //SDL_DisplayYUVOverlay(sdlOverlay, &sdlRect);
 	}    
@@ -382,11 +359,12 @@ static int read_frame(struct v4l_capture * cap)
 	return 1;
 }
 
-static void mainloop(struct v4l_capture * cap)
+static void mainloop(struct v4l_capture * cap,	\
+		     struct v4l_capture * cap2)
 {
 	unsigned int count;
 
-        count = 300;
+        count = 40;
 
         while (count-- > 0) {
                 for (;;) {
@@ -396,6 +374,11 @@ static void mainloop(struct v4l_capture * cap)
 
                         FD_ZERO (&fds);
                         FD_SET (cap->fd, &fds);
+			if(cap2)
+			  {
+			    FD_ZERO (&fds);
+			    FD_SET (cap2->fd, &fds);
+			  }
 
                         /* Timeout. */
                         tv.tv_sec = 2;
@@ -414,9 +397,19 @@ static void mainloop(struct v4l_capture * cap)
                                 fprintf (stderr, "select timeout\n");
                                 exit (EXIT_FAILURE);
                         }
-
-			if (read_frame (cap))
-                    		break;
+			if(FD_ISSET(cap->fd,&fds))
+			  {
+			    if (read_frame (cap))
+			      break;
+			  }
+			if(cap2)
+			  {
+			    if(FD_ISSET(cap2->fd,&fds))
+			      {
+				if (read_frame (cap))
+				  break;
+			      }	    
+			  }
 	
 			/* EAGAIN - continue select loop. */
                 }
@@ -717,15 +710,15 @@ static void init_device(struct v4l_capture * cap)
         CLEAR (fmt);
 
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        fmt.fmt.pix.width       = THEWIDTH;//160;//320; 
-        fmt.fmt.pix.height      = THEHEIGHT;//120;//240;
+        fmt.fmt.pix.width       = cap->sdlRect.w;//160;//320; 
+        fmt.fmt.pix.height      = cap->sdlRect.h;//120;//240;
 	if(CAM_LOGITEC==cap->cam)
 	  {
 	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
 	  }
 	else
 	  {
-	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;
+	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;//V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;
 	  }
         fmt.fmt.pix.field       = V4L2_FIELD_NONE;//V4L2_FIELD_INTERLACED;
 	//	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
@@ -819,78 +812,147 @@ long_options [] = {
         { 0, 0, 0, 0 }
 };
 
+
+//#define THEWIDTH 160//800//640//1280//160
+//#define THEHEIGHT 120//448//480//720//120
+
+#define SDLWIDTH 800
+#define SDLHEIGHT 600
+
+static struct v4l_capture capt;
+static struct v4l_capture capt2;
+
+static SDL_Surface * mainSurface;
+
+#define DEVICES 1
+
 int main(int argc,char ** argv)
 {
+  int bpp = 32;
+  int i;
+  struct v4l_capture acap[2];
 
-	init_v4l_caputre(&cap);
+  // Start SDL
+  if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+    {
+      fprintf( stderr, "Failed to initialise SDL: %s\n", SDL_GetError() );
+      return -1;
+    }
+  atexit( SDL_Quit );
+  
+  // Create a window the size of the display
+  SDL_WM_SetCaption( "camview", NULL );
+  mainSurface = SDL_SetVideoMode( SDLWIDTH,
+				  SDLHEIGHT,
+				  bpp, SDL_SWSURFACE );
+  if ( mainSurface == NULL )
+    {
+      fprintf( stderr, "Failed to set video mode: %s\n", SDL_GetError() );
+      return -1;
+    }
+  //    gettimeofday( &app->timestamp, NULL );
+  
+  for(i=0;i<DEVICES;i++)
+    {  
+      init_v4l_caputre(&acapt[i],50,50,160,120,mainSurface);
+      init_v4l_caputre(&capt2,250,250,160,120,mainSurface);
+    }
 
-        cap.dev_name = "/dev/video0";
+  for(i=0;i<DEVICES;i++)
+    {   
+      capt.dev_name = "/dev/video0";
+      capt2.dev_name = "/dev/video1";
+    }
+  acap[0]=capt;
+  acap[1]=capt2;
 
-        for (;;) {
-                int index;
-                int c;
-                
-                c = getopt_long (argc, argv,
-                                 short_options, long_options,
-                                 &index);
+  for (;;) {
+    int index;
+    int c;
+    
+    c = getopt_long (argc, argv,
+		     short_options, long_options,
+		     &index);
+    
+    if (-1 == c)
+      break;
+    
+    switch (c) {
+    case 0: /* getopt_long() flag */
+      break;
+      
+    case 'd':
+      capt.dev_name = optarg;
+      break;
+      
+    case 'h':
+      usage (stdout, argc, argv);
+      exit (EXIT_SUCCESS);
+      
+    case 'm':
+      capt.io = IO_METHOD_MMAP;
+      break;
+      
+    case 'r':
+      capt.io = IO_METHOD_READ;
+      break;
+      
+    case 'u':
+      capt.io = IO_METHOD_USERPTR;
+      break;
+    case 'c':
+      capt.cam = CAM_LOGITEC;
+      break;
+      
+      
+    default:
+      usage (stderr, argc, argv);
+      exit (EXIT_FAILURE);
+    }
+  }
+  
+  if(initSDL())
+    {
+      printf("initSDL failed\n");
+    }
 
-                if (-1 == c)
-                        break;
+  for(i=0;i<DEVICES;i++)
+    {
+      open_device (&capt,&capt.fd);
+      open_device (&capt2,&capt2.fd);
+    }
+  
+  for(i=0;i<DEVICES;i++)
+    {  
+      init_device (&capt);
+      init_device (&capt2);
+    }
+  
+  for(i=0;i<DEVICES;i++)
+    {  
+      start_capturing (&capt);
+      start_capturing (&capt2);
+    }  
+  mainloop (&capt,&capt2);
 
-                switch (c) {
-                case 0: /* getopt_long() flag */
-                        break;
+  for(i=0;i<DEVICES;i++)
+    {  
+      stop_capturing (&capt);
+      stop_capturing (&capt2);
+    }
+  for(i=0;i<DEVICES;i++)
+    {  
+      uninit_device (&capt);
+      uninit_device (&capt2);
+    }
 
-                case 'd':
-                        cap.dev_name = optarg;
-                        break;
-
-                case 'h':
-                        usage (stdout, argc, argv);
-                        exit (EXIT_SUCCESS);
-
-                case 'm':
-                        cap.io = IO_METHOD_MMAP;
-			break;
-
-                case 'r':
-                        cap.io = IO_METHOD_READ;
-			break;
-
-                case 'u':
-                        cap.io = IO_METHOD_USERPTR;
-			break;
-		case 'c':
-		        cap.cam = CAM_LOGITEC;
-			break;
-
-
-                default:
-                        usage (stderr, argc, argv);
-                        exit (EXIT_FAILURE);
-                }
-        }
-
-	if(initSDL())
-	  {
-	    printf("initSDL failed\n");
-	  }
-
-        open_device (&cap,&cap.fd);
-
-        init_device (&cap);
-
-        start_capturing (&cap);
-
-        mainloop (&cap);
-
-        stop_capturing (&cap);
-
-        uninit_device (&cap);
-
-        close_device (&cap.fd);
-
-        exit (EXIT_SUCCESS);
-
-        return 0;
+   for(i=0;i<DEVICES;i++)
+    { 
+      close_device (&capt.fd);
+      close_device (&capt2.fd);
+    }
+  
+  exit (EXIT_SUCCESS);
+  
+  return 0;
 }
