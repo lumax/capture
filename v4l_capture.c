@@ -57,6 +57,8 @@ struct v4l_capture
   SDL_Rect sdlRect;
 };
 
+static int PixFormat = 0;
+
 //static SDL_Overlay * sdlOverlay;
 //static SDL_Rect sdlRect = {.w=THEWIDTH,.h=THEHEIGHT,.x=50,.y=50};
 
@@ -729,7 +731,11 @@ static void init_device(struct v4l_capture * cap)
 	  }
 	else
 	  {
-	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;//V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;
+	    if(PixFormat)
+	      fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;//V4L2_PIX_FMT_YUYV;//V4L2_PIX_FMT_MJPEG;
+	    else
+	      fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+	      
 	  }
         fmt.fmt.pix.field       = V4L2_FIELD_NONE;//V4L2_FIELD_INTERLACED;
 	//	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
@@ -810,7 +816,7 @@ static void usage(FILE * fp,int argc,char ** argv)
 		 argv[0]);
 }
 
-static const char short_options [] = "d:hmruc2";
+static const char short_options [] = "d:hmruc2j";
 
 static const struct option
 long_options [] = {
@@ -821,6 +827,7 @@ long_options [] = {
         { "userp",      no_argument,            NULL,           'u' },
 	{ "cam",      no_argument,            NULL,           'c' },
 	{ "2cams",      no_argument,            NULL,           '2' },
+	{ "MJPEG",      no_argument,            NULL,           'j' },
         { 0, 0, 0, 0 }
 };
 
@@ -905,6 +912,9 @@ int main(int argc,char ** argv)
     case '2':
       DEVICES=2;
       break;
+    case 'j':
+      PixFormat=1;
+      break;
       
       
     default:
@@ -920,6 +930,7 @@ int main(int argc,char ** argv)
   for(i=0;i<DEVICES;i++)
     {  
       init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
+      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,1280,720,mainSurface);
     }
 
   for(i=0;i<DEVICES;i++)
