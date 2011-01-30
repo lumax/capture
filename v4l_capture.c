@@ -367,7 +367,7 @@ static void mainloop(struct v4l_capture * cap,	\
 {
 	unsigned int count;
 
-        count = 200;
+        count = 100;
 
         while (count-- > 0) {
                 for (;;) {
@@ -810,7 +810,7 @@ static void usage(FILE * fp,int argc,char ** argv)
 		 argv[0]);
 }
 
-static const char short_options [] = "d:hmruc";
+static const char short_options [] = "d:hmruc2";
 
 static const struct option
 long_options [] = {
@@ -820,6 +820,7 @@ long_options [] = {
         { "read",       no_argument,            NULL,           'r' },
         { "userp",      no_argument,            NULL,           'u' },
 	{ "cam",      no_argument,            NULL,           'c' },
+	{ "2cams",      no_argument,            NULL,           '2' },
         { 0, 0, 0, 0 }
 };
 
@@ -835,7 +836,7 @@ static struct v4l_capture capt2;
 
 static SDL_Surface * mainSurface;
 
-#define DEVICES 2
+static int DEVICES =1;
 
 int main(int argc,char ** argv)
 {
@@ -863,21 +864,6 @@ int main(int argc,char ** argv)
     }
   //    gettimeofday( &app->timestamp, NULL );
   
-  acap[0]=capt;
-  acap[1]=capt2;  
-
-  for(i=0;i<DEVICES;i++)
-    {  
-      init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
-    }
-
-  for(i=0;i<DEVICES;i++)
-    { 
-      if(i)
-	acap[i].dev_name =  "/dev/video1";
-      else
-	acap[i].dev_name =  "/dev/video0";
-    }
 
   for (;;) {
     int index;
@@ -916,6 +902,9 @@ int main(int argc,char ** argv)
     case 'c':
       capt.cam = CAM_LOGITEC;
       break;
+    case '2':
+      DEVICES=2;
+      break;
       
       
     default:
@@ -923,7 +912,25 @@ int main(int argc,char ** argv)
       exit (EXIT_FAILURE);
     }
   }
+
+
+  acap[0]=capt;
+  acap[1]=capt2;
+
+  for(i=0;i<DEVICES;i++)
+    {  
+      init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
+    }
+
+  for(i=0;i<DEVICES;i++)
+    { 
+      if(i)
+	acap[i].dev_name =  "/dev/video1";
+      else
+	acap[i].dev_name =  "/dev/video0";
+    }
   
+
   if(initSDL())
     {
       printf("initSDL failed\n");
@@ -943,7 +950,7 @@ int main(int argc,char ** argv)
     {  
       start_capturing (&acap[i]);
     }  
-  if(DEVICES)
+  if(2==DEVICES)
     mainloop (&acap[0],&acap[1]);
   else
     mainloop (&acap[0],0);
