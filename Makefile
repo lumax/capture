@@ -1,4 +1,4 @@
-PROJECT_NAME=capture
+PROJECT_NAME=v4l_capture
 DEFS+=-D_GNU_SOURCE=1 -D_REENTRANT
 
 INCLUDES+=-I. -I/usr/include/SDL
@@ -25,11 +25,11 @@ CFLAGS+=-g -c -Wall
 
 LDFLAGS+=-lSDL -lSDL_image
 
-OBJS = capture.o 
+OBJS = v4l_capture.o 
 
 
 include $(MAKE_DIR)/global.mak
 
 public:
 	cp $(PROJECT_NAME) /opt/eldk/arm/usr/work/capture/$(PROJECT_NAME)
-	cp capture.c /opt/eldk/arm/usr/work/capture/capture.c
+	cp capture.c /opt/eldk/arm/usr/work/capture/$(PROJECT_NAME).c

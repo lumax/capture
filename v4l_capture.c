@@ -199,8 +199,8 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
       SDL_UnlockYUVOverlay(sdlOverlay); 
       i = SDL_DisplayYUVOverlay(sdlOverlay,&sdlRect);
       */
-       fputc ('.', stdout);
-        fflush (stdout);
+      //fputc ('.', stdout);
+      // fflush (stdout);
     }
   else if(method==IO_METHOD_USERPTR)
     {
@@ -359,12 +359,15 @@ static int read_frame(struct v4l_capture * cap)
 	return 1;
 }
 
+static int counter1 = 0;
+static int counter2=0;
+
 static void mainloop(struct v4l_capture * cap,	\
 		     struct v4l_capture * cap2)
 {
 	unsigned int count;
 
-        count = 40;
+        count = 200;
 
         while (count-- > 0) {
                 for (;;) {
@@ -376,15 +379,17 @@ static void mainloop(struct v4l_capture * cap,	\
                         FD_SET (cap->fd, &fds);
 			if(cap2)
 			  {
-			    FD_ZERO (&fds);
+			    //FD_ZERO (&fds);
 			    FD_SET (cap2->fd, &fds);
 			  }
 
                         /* Timeout. */
                         tv.tv_sec = 2;
                         tv.tv_usec = 0;
-
-                        r = select (cap->fd + 1, &fds, NULL, NULL, &tv);
+			if(cap2)
+			  r = select (cap2->fd + 1, &fds, NULL, NULL, &tv);
+			else
+			  r = select (cap->fd + 1, &fds, NULL, NULL, &tv);
 
                         if (-1 == r) {
                                 if (EINTR == errno)
@@ -399,6 +404,9 @@ static void mainloop(struct v4l_capture * cap,	\
                         }
 			if(FD_ISSET(cap->fd,&fds))
 			  {
+			    counter1++;
+			    fputc ('1', stdout);
+			    fflush (stdout);
 			    if (read_frame (cap))
 			      break;
 			  }
@@ -406,7 +414,10 @@ static void mainloop(struct v4l_capture * cap,	\
 			  {
 			    if(FD_ISSET(cap2->fd,&fds))
 			      {
-				if (read_frame (cap))
+				counter2++;
+				fputc ('2', stdout);
+				 fflush (stdout);
+				if (read_frame (cap2))
 				  break;
 			      }	    
 			  }
@@ -824,7 +835,7 @@ static struct v4l_capture capt2;
 
 static SDL_Surface * mainSurface;
 
-#define DEVICES 1
+#define DEVICES 2
 
 int main(int argc,char ** argv)
 {
@@ -852,19 +863,21 @@ int main(int argc,char ** argv)
     }
   //    gettimeofday( &app->timestamp, NULL );
   
+  acap[0]=capt;
+  acap[1]=capt2;  
+
   for(i=0;i<DEVICES;i++)
     {  
-      init_v4l_caputre(&acapt[i],50,50,160,120,mainSurface);
-      init_v4l_caputre(&capt2,250,250,160,120,mainSurface);
+      init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
     }
 
   for(i=0;i<DEVICES;i++)
-    {   
-      capt.dev_name = "/dev/video0";
-      capt2.dev_name = "/dev/video1";
+    { 
+      if(i)
+	acap[i].dev_name =  "/dev/video1";
+      else
+	acap[i].dev_name =  "/dev/video0";
     }
-  acap[0]=capt;
-  acap[1]=capt2;
 
   for (;;) {
     int index;
@@ -918,38 +931,37 @@ int main(int argc,char ** argv)
 
   for(i=0;i<DEVICES;i++)
     {
-      open_device (&capt,&capt.fd);
-      open_device (&capt2,&capt2.fd);
+      open_device (&acap[i],&acap[i].fd);
     }
   
   for(i=0;i<DEVICES;i++)
     {  
-      init_device (&capt);
-      init_device (&capt2);
+      init_device (&acap[i]);
     }
   
   for(i=0;i<DEVICES;i++)
     {  
-      start_capturing (&capt);
-      start_capturing (&capt2);
+      start_capturing (&acap[i]);
     }  
-  mainloop (&capt,&capt2);
+  if(DEVICES)
+    mainloop (&acap[0],&acap[1]);
+  else
+    mainloop (&acap[0],0);
+
+  printf ("cam1 : %i, cam2 : %i",counter1,counter2);
 
   for(i=0;i<DEVICES;i++)
     {  
-      stop_capturing (&capt);
-      stop_capturing (&capt2);
+      stop_capturing (&acap[i]);
     }
   for(i=0;i<DEVICES;i++)
     {  
-      uninit_device (&capt);
-      uninit_device (&capt2);
+      uninit_device (&acap[i]);
     }
 
    for(i=0;i<DEVICES;i++)
     { 
-      close_device (&capt.fd);
-      close_device (&capt2.fd);
+      close_device (&acap[i].fd);
     }
   
   exit (EXIT_SUCCESS);
