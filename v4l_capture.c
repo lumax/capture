@@ -91,7 +91,7 @@ void init_v4l_caputre(struct v4l_capture * cap,	\
   
   cap->sdlOverlay = SDL_CreateYUVOverlay(w,			\
 					 h,			\
-					 SDL_YVYU_OVERLAY,	\
+					 SDL_YUY2_OVERLAY,	\
 					 cap->mainSurface);
   //printf("Overlay planes = %i\n",sdlOverlay->planes);
   //sdlOverlay->planes = 3; 
@@ -123,11 +123,12 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
   //int i;
   if(method==IO_METHOD_MMAP)
     {
+SDL_RWops * rw;
+SDL_Surface  * pSjpeg;
       if(CAM_LOGITEC==cap->cam)
 	{
-	  SDL_RWops * rw;
-	  SDL_Surface  * pSjpeg;
-	  //SDL_Rect theRect;
+	  //SDL_RWops * rw;
+	  //SDL_Surface  * pSjpeg;
 	  rw = SDL_RWFromConstMem(p,len);
 	  if(0==rw)
 	    {
@@ -144,7 +145,6 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
 	      SDL_FreeRW(rw);
 	      errno_exit ("SDL IMG_isJPG");
 	    }
-	  
 
 	  pSjpeg = IMG_LoadJPG_RW(rw);
 
@@ -177,6 +177,25 @@ static void process_image(struct v4l_capture* cap,const void * p,int method,size
 	}
       else
 	{
+
+	  /*	  rw = SDL_RWFromConstMem(p,len);
+	  if(0==rw)
+	    {
+	      printf("error SDL_RWFromConstMem\n");
+	      errno_exit ("SDL stuff");
+	    }
+	  if(IMG_isJPG(rw))
+	    {
+	       printf("sample.jpg is a JPG file.\n");
+	       SDL_FreeRW(rw);
+	    }
+	  else
+	    {
+	      printf("sample.jpg is not a JPG file, or JPG support is not available.\n");
+	      SDL_FreeRW(rw);
+	      //errno_exit ("SDL IMG_isJPG");
+	    }
+	  */
 	  /*SDL_Rect tmprect;
 	  tmprect.w=THEWIDTH;
 	  tmprect.h=THEHEIGHT;
@@ -929,8 +948,9 @@ int main(int argc,char ** argv)
 
   for(i=0;i<DEVICES;i++)
     {  
-      init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
-      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,1280,720,mainSurface);
+      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,640,480,mainSurface);
+      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
+      init_v4l_caputre(&acap[i],50+150*i,50+150*i,352,288,mainSurface);
     }
 
   for(i=0;i<DEVICES;i++)
