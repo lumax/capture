@@ -31,5 +31,5 @@ OBJS = v4l_capture.o
 include $(MAKE_DIR)/global.mak
 
 public:
-	cp $(PROJECT_NAME) /opt/eldk/arm/usr/work/capture/$(PROJECT_NAME)
-	cp capture.c /opt/eldk/arm/usr/work/capture/$(PROJECT_NAME).c
+	cp $(PROJECT_NAME) $(ELDK_FS)/usr/work/capture/$(PROJECT_NAME)
+	cp capture.c $(ELDK_FS)/usr/work/capture/$(PROJECT_NAME).c
