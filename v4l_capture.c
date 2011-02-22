@@ -81,6 +81,76 @@ int initSDL(void)
     return 0;
 }
 
+static SDL_Surface * pCrossair;
+static SDL_Surface * getCrossair()
+{
+  if(pCrossair)
+    {
+      return pCrossair;
+    }
+  else
+    {
+      /*         SDL_PixelFormat * format = SDL_GetVideoSurface()->format;
+      pCrossair=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA,		\
+			       300,					\
+			       300,					\
+				     24,	\
+			       format->Rmask,				\
+			       format->Gmask,				\
+			       format->Bmask,				\
+			       format->Amask);  
+      if(!pCrossair)
+	{
+	  return 0;
+	}
+      Uint32 color = SDL_MapRGB(SDL_GetVideoSurface()->format,0xff,0x33,0xcc);
+      SDL_FillRect(pCrossair,0,color);*/
+      SDL_Surface * tmp = 0;
+      //normal
+      tmp = IMG_Load("crossair.png");
+      if(!tmp)
+	{
+	  return 0;
+	}
+      pCrossair = SDL_DisplayFormatAlpha(tmp);
+      if(!pCrossair)
+	{
+	  SDL_FreeSurface(tmp);
+	return 0;
+	}
+      SDL_FreeSurface(tmp);
+      
+      return pCrossair;
+    }
+}
+
+static SDL_Surface * getCrossair2()
+{
+  if(pCrossair)
+    {
+      return pCrossair;
+    }
+  else
+    {
+      SDL_PixelFormat * format = SDL_GetVideoSurface()->format;
+      pCrossair=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA,		\
+			       300,					\
+			       300,					\
+				     24/*FSGDEFAULTCOLORDEPTH*/,	\
+			       format->Rmask,				\
+			       format->Gmask,				\
+			       format->Bmask,				\
+			       format->Amask);  
+      if(!pCrossair)
+	{
+	  return 0;
+	}
+      Uint32 color = SDL_MapRGB(SDL_GetVideoSurface()->format,0xff,0x33,0xcc);
+      SDL_Rect kreuz = {.x=50,.y=50,.w=30,.h=100};
+      SDL_FillRect(pCrossair,&kreuz,color);
+      return pCrossair;
+    }
+}
 
 void init_v4l_caputre(struct v4l_capture * cap,	\
 		     Sint16 x,			\
@@ -216,6 +286,8 @@ SDL_Surface  * pSjpeg;
 	  tmprect.y=sdlRect.y=THEHEIGHT;
 	  */
 	  //printf("%i\n", p);
+	  SDL_BlitSurface(getCrossair(),0,cap->mainSurface,0);
+	  SDL_Flip(cap->mainSurface);
 	  SDL_LockSurface(cap->mainSurface);
 	  SDL_LockYUVOverlay(cap->sdlOverlay);
 	  
@@ -224,7 +296,34 @@ SDL_Surface  * pSjpeg;
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
 	  
+	  /*	  char * pc = (char*)p;
+	  int i=0;
+	  for(i=0;i<len-5;i++)
+	    {
+	      if(pc[i]=='!')
+		{
+		  if(pc[i+1]=='A'&&pc[i+2]=='V'&&pc[i+3]=='I'\
+		     &&pc[i+4]=='1')
+		    {
+		       printf("!AVI1 found\n"); 
+		       break;
+		    }
+		}
+	      if(pc[i]=='J')
+		{
+		  if(pc[i+1]=='F'&&pc[i+2]=='I'&&pc[i+3]=='F')
+		    {
+		       printf("JFIF found\n"); 
+		       break;
+		    }
+		}
+		}*/
+	  
 	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
+	  
+
+	  //SDL_Surface * psur = 
+	  
 	  //SDL_DisplayYUVOverlay(sdlOverlay, &tmprect);
 	}
       /*
@@ -401,7 +500,7 @@ static void mainloop(struct v4l_capture * cap,	\
 {
 	unsigned int count;
 
-        count = 100;
+        count = 50;
 
         while (count-- > 0) {
                 for (;;) {
@@ -418,7 +517,7 @@ static void mainloop(struct v4l_capture * cap,	\
 			  }
 
                         /* Timeout. */
-                        tv.tv_sec = 2;
+                        tv.tv_sec = 10;
                         tv.tv_usec = 0;
 			if(cap2)
 			  r = select (cap2->fd + 1, &fds, NULL, NULL, &tv);
@@ -961,9 +1060,9 @@ int main(int argc,char ** argv)
 
   for(i=0;i<DEVICES;i++)
     {  
-      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,640,480,mainSurface);
+      init_v4l_caputre(&acap[i],50+150*i,50+150*i,640,480,mainSurface);
       //init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
-      init_v4l_caputre(&acap[i],50+150*i,50+150*i,352,288,mainSurface);
+      //  init_v4l_caputre(&acap[i],50+150*i,50+150*i,352,288,mainSurface);
     }
 
   for(i=0;i<DEVICES;i++)
