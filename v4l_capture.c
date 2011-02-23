@@ -260,7 +260,25 @@ SDL_Surface  * pSjpeg;
 	}
       else
 	{
-
+	  /*
+	  //record file
+	  static int thefd = 0;
+	  static int count = 0;
+	  if(!thefd)
+	    {
+	      thefd = open("mjpeg2",O_RDWR| O_CREAT |O_APPEND);
+	    }
+	  count++;
+	  if(count<=5)
+	    {
+	      write(thefd,p,len);
+	    }
+	  else
+	    {
+	      close(thefd);
+	      exit(0);
+	    }
+	  */
 	  /*	  rw = SDL_RWFromConstMem(p,len);
 	  if(0==rw)
 	    {
