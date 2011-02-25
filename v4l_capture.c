@@ -462,22 +462,23 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  int h = cap->sdlRect.h;
 	  int alles = 0;
 	  int cam = cap->camnumber;
-	  /*	  if(1)
+  	  if(cam||!cam)
 	    {
 	      for(i=0;i<h;i++)
 		{
 		  //for(ii=0;ii<w;ii++)
 		  //	{
-		  //memcpy(cap->sdlOverlay->pixels[0]+i*w+i*w*cam, p+alles, w);
-		  memcpy(cap->sdlOverlay->pixels[0]+i*w*2, p+alles, w*2);
+		  //memcpy(cap->sdlOverlay->pixels[0]+i*2*w+w*cam, p+alles, w+w/2);
+		  //printf("pixels[0]+%i len=%i\n",i*w*4,w*2);
+		  memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2, p+alles, w*2);
 		  //	}
 		  alles += w*2;
 		}
-	      printf("alles = %i, len = %i\n",alles,len);
+	      //printf("alles = %i, len = %i\n",alles,len);
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
-	  }*/
-
+	   }
+	  /*
 	  if(cap->camnumber)
 	    {
 	      //memcpy(cap->sdlOverlay->pixels[0], p, len);
@@ -491,7 +492,7 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	    }
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
-
+	  */
 	  //counter++;
 	  //if(counter<=1)
 	  //  {
@@ -501,8 +502,8 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  //    cam0ready=0;
 	  //    cam1ready=0;
 	  SDL_Rect tmpRect = cap->sdlRect;
-	  	  tmpRect.h=tmpRect.h*2;//untereinander
-		  //tmpRect.w=tmpRect.w*2;//nebeneinander
+	  tmpRect.h=tmpRect.h*2;//untereinander
+		  tmpRect.w=tmpRect.w*4;//nebeneinander
 	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &tmpRect);
 	  //SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
 	      //  }
@@ -1114,8 +1115,8 @@ long_options [] = {
 //#define THEWIDTH 160//800//640//1280//160
 //#define THEHEIGHT 120//448//480//720//120
 
-#define SDLWIDTH 800
-#define SDLHEIGHT 600
+#define SDLWIDTH 1024//800
+#define SDLHEIGHT 768//600
 
 static struct v4l_capture capt;
 static struct v4l_capture capt2;
@@ -1231,8 +1232,8 @@ int main(int argc,char ** argv)
       SDL_FreeYUVOverlay(acap[i].sdlOverlay);
     }
   
-  theoverlay = SDL_CreateYUVOverlay(CAMWIDTH,			\
-				    CAMHEIGHT*2,			\
+  theoverlay = SDL_CreateYUVOverlay(CAMWIDTH*2,			\
+				    CAMHEIGHT,		\
 				    SDL_YUY2_OVERLAY,		\
 				    mainSurface);
 
