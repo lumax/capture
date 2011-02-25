@@ -41,6 +41,8 @@
 #include <SDL/SDL.h>
 #include <SDL_image.h>
 
+#define  MULTIPLIKATOR 1 
+
 #define CLEAR(x) memset (&(x), 0, sizeof (x))
 
 #define CAM_OTHER 0
@@ -72,7 +74,6 @@ struct v4l_capture
 };
 
 static int PixFormat = 0;
-
 //static SDL_Overlay * sdlOverlay;
 //static SDL_Rect sdlRect = {.w=THEWIDTH,.h=THEHEIGHT,.x=50,.y=50};
 
@@ -426,7 +427,7 @@ SDL_Surface  * pSjpeg;
         fflush (stdout);
     }
 }
-
+static char leerbuf[1024];
 /***************************************************************
  ***************************************************************
  ***************************************************************
@@ -462,77 +463,32 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  int h = cap->sdlRect.h;
 	  int alles = 0;
 	  int cam = cap->camnumber;
+	  int dd = 0;
   	  if(cam||!cam)
 	    {
 	      for(i=0;i<h;i++)
 		{
-		  //for(ii=0;ii<w;ii++)
-		  //	{
-		  //memcpy(cap->sdlOverlay->pixels[0]+i*2*w+w*cam, p+alles, w+w/2);
-		  //printf("pixels[0]+%i len=%i\n",i*w*4,w*2);
-		  memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2, p+alles, w*2);
-		  //	}
+		  if(i>148&&i<150)
+		    {
+		      memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,leerbuf, w*2);
+		    }
+		  else
+		    {
+		      memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,p+alles, w*2);	      
+		    }
 		  alles += w*2;
 		}
 	      //printf("alles = %i, len = %i\n",alles,len);
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
 	   }
-	  /*
-	  if(cap->camnumber)
-	    {
-	      //memcpy(cap->sdlOverlay->pixels[0], p, len);
-	      memcpy(cap->sdlOverlay->pixels[0]+len, p, len);
-	      cam1ready++;
-	    }
-	  else
-	    {
-	      memcpy(cap->sdlOverlay->pixels[0], p, len);
-	      cam0ready++;
-	    }
-	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
-	  SDL_UnlockSurface(cap->mainSurface);
-	  */
-	  //counter++;
-	  //if(counter<=1)
-	  //  {
-	  //   counter=0;
-	  //if(cam0ready&&cam1ready)
-	  //  {
-	  //    cam0ready=0;
-	  //    cam1ready=0;
-	  SDL_Rect tmpRect = cap->sdlRect;
-	  tmpRect.h=tmpRect.h*2;//untereinander
-		  tmpRect.w=tmpRect.w*4;//nebeneinander
-	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &tmpRect);
-	  //SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
-	      //  }
 
-	  /*	  char * pc = (char*)p;
-	  int i=0;
-	  for(i=0;i<len-5;i++)
-	    {
-	      if(pc[i]=='!')
-		{
-		  if(pc[i+1]=='A'&&pc[i+2]=='V'&&pc[i+3]=='I'\
-		     &&pc[i+4]=='1')
-		    {
-		       printf("!AVI1 found\n"); 
-		       break;
-		    }
-		}
-	      if(pc[i]=='J')
-		{
-		  if(pc[i+1]=='F'&&pc[i+2]=='I'&&pc[i+3]=='F')
-		    {
-		       printf("JFIF found\n"); 
-		       break;
-		    }
-		}
-		}*/
-	  //SDL_Surface * psur = 
-	  
-	  //SDL_DisplayYUVOverlay(sdlOverlay, &tmprect);
+	  SDL_Rect tmpRect = cap->sdlRect;
+	  tmpRect.x = -100;
+	  tmpRect.y = 0;
+	  tmpRect.h=tmpRect.h*MULTIPLIKATOR;//*2;//untereinander
+	  tmpRect.w=tmpRect.w*2*MULTIPLIKATOR;//*4;//nebeneinander
+	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &tmpRect);
 	}
       }
   else if(method==IO_METHOD_USERPTR)
@@ -1152,7 +1108,13 @@ int main(int argc,char ** argv)
       return -1;
     }
   //    gettimeofday( &app->timestamp, NULL );
-  
+  SDL_Surface * tmp = getCrossair2();
+  if(SDL_BlitSurface(tmp,0,mainSurface,0))
+    {
+      fprintf( stderr, "Failed to blit Surface: %s\n", SDL_GetError() );
+      return -1; 
+    }
+  SDL_UpdateRect(mainSurface,0,0,0,0);
 
   for (;;) {
     int index;
@@ -1208,9 +1170,9 @@ int main(int argc,char ** argv)
 
   acap[0]=capt;
   acap[1]=capt2;
-  #define CAMWIDTH 352
-  #define CAMHEIGHT 288
-  #define DauerSelect 150
+#define CAMWIDTH 352
+#define CAMHEIGHT 288
+  #define DauerSelect 300
 
   for(i=0;i<DEVICES;i++)
     { 
