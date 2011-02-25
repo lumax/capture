@@ -68,6 +68,7 @@ struct v4l_capture
   SDL_Surface * mainSurface;
   SDL_Overlay * sdlOverlay;
   SDL_Rect sdlRect;
+  int camnumber;
 };
 
 static int PixFormat = 0;
@@ -203,7 +204,7 @@ static int xioctl(struct v4l_capture * cap,int request,void * arg)
 
 static void process_image(struct v4l_capture* cap,const void * p,int method,size_t len)
 {
-  //int i;
+  printf("pi");
   if(method==IO_METHOD_MMAP)
     {
 SDL_RWops * rw;
@@ -304,8 +305,8 @@ SDL_Surface  * pSjpeg;
 	  tmprect.y=sdlRect.y=THEHEIGHT;
 	  */
 	  //printf("%i\n", p);
-	  SDL_BlitSurface(getCrossair(),0,cap->mainSurface,0);
-	  SDL_Flip(cap->mainSurface);
+	  //SDL_BlitSurface(getCrossair(),0,cap->mainSurface,0);
+	  //SDL_Flip(cap->mainSurface);
 	  SDL_LockSurface(cap->mainSurface);
 	  SDL_LockYUVOverlay(cap->sdlOverlay);
 	  
@@ -313,7 +314,18 @@ SDL_Surface  * pSjpeg;
 	  
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
-	  
+
+	  //counter++;
+	  //if(counter<=1)
+	  //  {
+	  //   counter=0;
+	  //if(cam0ready&&cam1ready)
+	  //  {
+	  //    cam0ready=0;
+	  //    cam1ready=0;
+	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
+	      //  }
+
 	  /*	  char * pc = (char*)p;
 	  int i=0;
 	  for(i=0;i<len-5;i++)
@@ -337,7 +349,7 @@ SDL_Surface  * pSjpeg;
 		}
 		}*/
 	  
-	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
+	  
 	  
 
 	  //SDL_Surface * psur = 
@@ -415,6 +427,124 @@ SDL_Surface  * pSjpeg;
     }
 }
 
+/***************************************************************
+ ***************************************************************
+ ***************************************************************
+ ***************************************************************
+ ***************************************************************/
+static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len)
+{
+  static int counter =0;
+  static int cam0ready = 0;
+  static int cam1ready = 0;
+  int i,ii;
+  if(method==IO_METHOD_MMAP)
+    {
+      if(CAM_LOGITEC==cap->cam)
+	{
+	  printf("CAM_LOGITEC not supported in process_image2");
+	}
+      else
+	{
+	  /*SDL_Rect tmprect;
+	  tmprect.w=THEWIDTH;
+	  tmprect.h=THEHEIGHT;
+	  tmprect.x=sdlRect.x+THEWIDTH;
+	  tmprect.y=sdlRect.y=THEHEIGHT;
+	  */
+	  //printf("%i\n", p);
+	  //SDL_BlitSurface(getCrossair(),0,cap->mainSurface,0);
+	  //SDL_Flip(cap->mainSurface);
+	  SDL_LockSurface(cap->mainSurface);
+	  SDL_LockYUVOverlay(cap->sdlOverlay);
+	  
+	  int w = cap->sdlRect.w;
+	  int h = cap->sdlRect.h;
+	  int alles = 0;
+	  int cam = cap->camnumber;
+	  /*	  if(1)
+	    {
+	      for(i=0;i<h;i++)
+		{
+		  //for(ii=0;ii<w;ii++)
+		  //	{
+		  //memcpy(cap->sdlOverlay->pixels[0]+i*w+i*w*cam, p+alles, w);
+		  memcpy(cap->sdlOverlay->pixels[0]+i*w*2, p+alles, w*2);
+		  //	}
+		  alles += w*2;
+		}
+	      printf("alles = %i, len = %i\n",alles,len);
+	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
+	  SDL_UnlockSurface(cap->mainSurface);
+	  }*/
+
+	  if(cap->camnumber)
+	    {
+	      //memcpy(cap->sdlOverlay->pixels[0], p, len);
+	      memcpy(cap->sdlOverlay->pixels[0]+len, p, len);
+	      cam1ready++;
+	    }
+	  else
+	    {
+	      memcpy(cap->sdlOverlay->pixels[0], p, len);
+	      cam0ready++;
+	    }
+	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
+	  SDL_UnlockSurface(cap->mainSurface);
+
+	  //counter++;
+	  //if(counter<=1)
+	  //  {
+	  //   counter=0;
+	  //if(cam0ready&&cam1ready)
+	  //  {
+	  //    cam0ready=0;
+	  //    cam1ready=0;
+	  SDL_Rect tmpRect = cap->sdlRect;
+	  	  tmpRect.h=tmpRect.h*2;//untereinander
+		  //tmpRect.w=tmpRect.w*2;//nebeneinander
+	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &tmpRect);
+	  //SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
+	      //  }
+
+	  /*	  char * pc = (char*)p;
+	  int i=0;
+	  for(i=0;i<len-5;i++)
+	    {
+	      if(pc[i]=='!')
+		{
+		  if(pc[i+1]=='A'&&pc[i+2]=='V'&&pc[i+3]=='I'\
+		     &&pc[i+4]=='1')
+		    {
+		       printf("!AVI1 found\n"); 
+		       break;
+		    }
+		}
+	      if(pc[i]=='J')
+		{
+		  if(pc[i+1]=='F'&&pc[i+2]=='I'&&pc[i+3]=='F')
+		    {
+		       printf("JFIF found\n"); 
+		       break;
+		    }
+		}
+		}*/
+	  //SDL_Surface * psur = 
+	  
+	  //SDL_DisplayYUVOverlay(sdlOverlay, &tmprect);
+	}
+      }
+  else if(method==IO_METHOD_USERPTR)
+    {
+      printf("IO_METHOD_USEPTR not supported in process_image2\n");
+    }
+  else
+    {
+      fputc ('_', stdout);
+        fflush (stdout);
+    }
+}
+
 static int read_frame(struct v4l_capture * cap)
 {
         struct v4l2_buffer buf;
@@ -464,7 +594,7 @@ static int read_frame(struct v4l_capture * cap)
 
                 assert (buf.index < cap->n_buffers);
 
-	        process_image (cap,cap->buffers[buf.index].start,IO_METHOD_MMAP,cap->buffers[buf.index].length);
+	        process_image2 (cap,cap->buffers[buf.index].start,IO_METHOD_MMAP,cap->buffers[buf.index].length);
 
 		if (-1 == xioctl (cap, VIDIOC_QBUF, &buf))
 			errno_exit ("VIDIOC_QBUF");
@@ -514,11 +644,11 @@ static int counter1 = 0;
 static int counter2=0;
 
 static void mainloop(struct v4l_capture * cap,	\
-		     struct v4l_capture * cap2)
+		     struct v4l_capture * cap2,int count)
 {
-	unsigned int count;
+  //	unsigned int count;
 
-        count = 50;
+  //        count = 300;
 
         while (count-- > 0) {
                 for (;;) {
@@ -994,6 +1124,8 @@ static SDL_Surface * mainSurface;
 
 static int DEVICES =1;
 
+static SDL_Overlay * theoverlay= 0; 
+
 int main(int argc,char ** argv)
 {
   int bpp = 32;
@@ -1075,16 +1207,44 @@ int main(int argc,char ** argv)
 
   acap[0]=capt;
   acap[1]=capt2;
-
-  for(i=0;i<DEVICES;i++)
-    {  
-      init_v4l_caputre(&acap[i],50+150*i,50+150*i,640,480,mainSurface);
-      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
-      //  init_v4l_caputre(&acap[i],50+150*i,50+150*i,352,288,mainSurface);
-    }
+  #define CAMWIDTH 352
+  #define CAMHEIGHT 288
+  #define DauerSelect 150
 
   for(i=0;i<DEVICES;i++)
     { 
+      init_v4l_caputre(&acap[i],\
+		       10,\
+/*(SDLWIDTH/2)+((i-1)*CAMWIDTH),	\*/
+		       10,\
+		       CAMWIDTH,\
+		       CAMHEIGHT,			\
+		       mainSurface);
+      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,640,480,mainSurface);
+      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
+	     //init_v4l_caputre(&acap[i],50+150*i,50+150*i,352,288,mainSurface);
+    }
+
+  //alle devices das selbe Overlay  
+  for(i=0;i<DEVICES;i++)
+    {   
+      SDL_FreeYUVOverlay(acap[i].sdlOverlay);
+    }
+  
+  theoverlay = SDL_CreateYUVOverlay(CAMWIDTH,			\
+				    CAMHEIGHT*2,			\
+				    SDL_YUY2_OVERLAY,		\
+				    mainSurface);
+
+    for(i=0;i<DEVICES;i++)
+    {   
+      acap[i].sdlOverlay=theoverlay;
+    }
+    //+++++++++++++++++++++++++++
+
+  for(i=0;i<DEVICES;i++)
+    { 
+      acap[i].camnumber=i;
       if(i)
 	acap[i].dev_name =  "/dev/video1";
       else
@@ -1112,9 +1272,9 @@ int main(int argc,char ** argv)
       start_capturing (&acap[i]);
     }  
   if(2==DEVICES)
-    mainloop (&acap[0],&acap[1]);
+    mainloop (&acap[0],&acap[1],DauerSelect);
   else
-    mainloop (&acap[0],0);
+    mainloop (&acap[0],0,DauerSelect);
 
   printf ("cam1 : %i, cam2 : %i",counter1,counter2);
 
@@ -1136,3 +1296,4 @@ int main(int argc,char ** argv)
   
   return 0;
 }
+
