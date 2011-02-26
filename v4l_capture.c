@@ -435,10 +435,7 @@ static char leerbuf[1024];
  ***************************************************************/
 static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len)
 {
-  static int counter =0;
-  static int cam0ready = 0;
-  static int cam1ready = 0;
-  int i,ii;
+  int i;
   if(method==IO_METHOD_MMAP)
     {
       if(CAM_LOGITEC==cap->cam)
@@ -447,15 +444,6 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	}
       else
 	{
-	  /*SDL_Rect tmprect;
-	  tmprect.w=THEWIDTH;
-	  tmprect.h=THEHEIGHT;
-	  tmprect.x=sdlRect.x+THEWIDTH;
-	  tmprect.y=sdlRect.y=THEHEIGHT;
-	  */
-	  //printf("%i\n", p);
-	  //SDL_BlitSurface(getCrossair(),0,cap->mainSurface,0);
-	  //SDL_Flip(cap->mainSurface);
 	  SDL_LockSurface(cap->mainSurface);
 	  SDL_LockYUVOverlay(cap->sdlOverlay);
 	  
@@ -463,29 +451,25 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  int h = cap->sdlRect.h;
 	  int alles = 0;
 	  int cam = cap->camnumber;
-	  int dd = 0;
-  	  if(cam||!cam)
+	  for(i=0;i<h;i++)
 	    {
-	      for(i=0;i<h;i++)
+	      if(i>148&&i<150)
 		{
-		  if(i>148&&i<150)
-		    {
-		      memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,leerbuf, w*2);
-		    }
-		  else
-		    {
-		      memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,p+alles, w*2);	      
-		    }
-		  alles += w*2;
+		  memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,leerbuf, w*2);
 		}
-	      //printf("alles = %i, len = %i\n",alles,len);
+	      else
+		{
+		  memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,p+alles, w*2);	      
+		}
+	      alles += w*2;
+	    }
+	  //printf("alles = %i, len = %i\n",alles,len);
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
-	   }
 
 	  SDL_Rect tmpRect = cap->sdlRect;
-	  tmpRect.x = -100;
-	  tmpRect.y = 0;
+	  tmpRect.x = 10;
+	  tmpRect.y = 100;
 	  tmpRect.h=tmpRect.h*MULTIPLIKATOR;//*2;//untereinander
 	  tmpRect.w=tmpRect.w*2*MULTIPLIKATOR;//*4;//nebeneinander
 	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &tmpRect);
@@ -1101,7 +1085,7 @@ int main(int argc,char ** argv)
   SDL_WM_SetCaption( "camview", NULL );
   mainSurface = SDL_SetVideoMode( SDLWIDTH,
 				  SDLHEIGHT,
-				  bpp, SDL_SWSURFACE );
+				  bpp, SDL_HWSURFACE);//SDL_SWSURFACE );
   if ( mainSurface == NULL )
     {
       fprintf( stderr, "Failed to set video mode: %s\n", SDL_GetError() );
