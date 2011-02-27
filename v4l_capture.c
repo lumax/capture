@@ -1100,7 +1100,7 @@ int capMain(int argc,char ** argv)
 #define CAMHEIGHT 288
 #define DauerSelect 300
 
-  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat);
+  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat,DEVICES);
 
   if(2==DEVICES)
     mainloop (&acap[0],&acap[1],DauerSelect);
@@ -1120,10 +1120,12 @@ int capMain(int argc,char ** argv)
 		unsigned int camWidth,		\
 		unsigned int camHeight,		\
 		int zoom,\
-		int pixelFormat)
+		int pixelFormat,\
+		int devices)
 {
   int i = 0;
   PixFormat = pixelFormat;
+  DEVICES = devices;
   acap[0]=capt;
   acap[1]=capt2;
   

@@ -13,7 +13,8 @@ extern void cap_init(SDL_Surface * surface,	\
 		     unsigned int camWidth,	\
 		     unsigned int camHeight,	\
 		     int zoom,			\
-		     int Pixelformat);
+		     int Pixelformat,\
+		     int devices);
 extern void cap_uninit();
 extern int capMain(int args, char ** argv);
 
