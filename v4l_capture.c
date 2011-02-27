@@ -380,10 +380,22 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  unsigned int crossBreite = 88;
 	  unsigned int crossDicke = 4;
 	  int zeile = w*2;
-	  unsigned int crossX = w/2-crossBreite/2;
-	  unsigned int crossY = h/2-crossDicke;
+	  //unsigned int crossX = w/2-crossBreite/2;
+	  //unsigned int crossY = h/2-crossDicke;
+	  unsigned int crossX = 100;
+	  unsigned int crossY = 200;
+	  if(cam)
+	    {
+	      crossX = 200;
+	      crossY = 150;
+	    }
+	  else
+	    {
+	      crossX = 50;
+	      crossY = 50;      
+	    }
 	  int start = crossX*2+zeile*crossY;
-	  int lineoffset = crossY*h*4;
+	  //int lineoffset = crossY*h*4;
 	  char * pc = (char *)p;
 	  
 	  //horizontale Linie
@@ -1000,7 +1012,7 @@ long_options [] = {
 
 
 
-int main(int argc,char ** argv)
+int capMain(int argc,char ** argv)
 {
   int bpp = 32;
   SDL_Surface * mainSurface;
@@ -1096,7 +1108,8 @@ int main(int argc,char ** argv)
     mainloop (&acap[0],0,DauerSelect);
 
   printf ("cam1 : %i, cam2 : %i",counter1,counter2);
-
+  
+  cap_uninit();
 
   exit (EXIT_SUCCESS);
   

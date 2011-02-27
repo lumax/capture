@@ -25,7 +25,7 @@ CFLAGS+=-g -c -Wall
 
 LDFLAGS+=-lSDL -lSDL_image
 
-OBJS = v4l_capture.o 
+OBJS = main.o v4l_capture.o 
 
 
 include $(MAKE_DIR)/global.mak
