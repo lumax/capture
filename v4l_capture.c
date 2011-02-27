@@ -40,6 +40,7 @@
 
 #include <SDL/SDL.h>
 #include <SDL_image.h>
+#include "v4l_capture.h"
 
 #define  MULTIPLIKATOR 1 
 
@@ -75,10 +76,40 @@ struct v4l_capture
   int camHeight;
 };
 
+static void setOverlayArea(struct v4l_capture* cap,int Zoom);
+static void init_v4l_caputre(struct v4l_capture * cap,	\
+			     int w,			\
+			     int h,			\
+			     int Zoom,			\
+			     SDL_Surface * display,	\
+			     SDL_Overlay * overlay	\
+			     );
+static void errno_exit(const char * err);
+static int xioctl(struct v4l_capture * cap,int request,void * arg);
+static void process_image(struct v4l_capture* cap,const void * p,int method,size_t len);
+static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len);
+static int read_frame(struct v4l_capture * cap);
+static void stop_capturing(struct v4l_capture * cap);
+static void start_capturing(struct v4l_capture * cap);
+static void uninit_device(struct v4l_capture * cap);
+static void init_read(struct v4l_capture * cap,unsigned int buffer_size);
+static void open_device(struct v4l_capture * cap,int * fd);
+static void init_device(struct v4l_capture * cap);
+
 static int PixFormat = 0;
 static SDL_Surface * pCrossair;
 
-static void setOverlayArea(struct v4l_capture* cap,int Zoom);
+#define SDLWIDTH 1024//800
+#define SDLHEIGHT 768//600
+
+static struct v4l_capture capt;
+static struct v4l_capture capt2;
+
+static int DEVICES = 1;
+
+static SDL_Overlay * theoverlay = 0; 
+
+static struct v4l_capture acap[2];
 
 static SDL_Surface * getCrossair()
 {
@@ -153,12 +184,12 @@ static void setOverlayArea(struct v4l_capture* cap,int Zoom)
     }
 }
 
-/*void cap_setZoom(int Zoom)
+void cap_setZoom(int Zoom)
 {
   
-}*/
+}
 
-void init_v4l_caputre(struct v4l_capture * cap,	\
+static void init_v4l_caputre(struct v4l_capture * cap,	\
 		      int w,			\
 		      int h,			\
 		      int Zoom,			\
@@ -325,7 +356,7 @@ static char leerbuf[1024];
 /***************************************************************/
 static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len)
 {
-  int i;
+  int i,ii;
   if(method==IO_METHOD_MMAP)
     {
       if(CAM_LOGITEC==cap->cam)
@@ -344,9 +375,40 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  int wMalZwei = w*2;
 	  int wMalVier = w*4;
 	  int offset = cam*wMalZwei;
+
+	  //Fadenkreuz	  
+	  unsigned int crossBreite = 88;
+	  unsigned int crossDicke = 4;
+	  int zeile = w*2;
+	  unsigned int crossX = w/2-crossBreite/2;
+	  unsigned int crossY = h/2-crossDicke;
+	  int start = crossX*2+zeile*crossY;
+	  int lineoffset = crossY*h*4;
+	  char * pc = (char *)p;
+	  
+	  //horizontale Linie
+	  for(i=0;i<crossDicke;i++)
+	    {
+	      for(ii=0;ii<crossBreite*2;ii++)
+		{
+		  pc[start+ii]=0x00;
+		}
+	      start+=zeile;
+	    }
+	  //vertikale Linie
+	  start = (crossX+crossBreite/2)*2+zeile*(crossY-crossBreite/2);
+	  for(i=0;i<crossBreite;i++)
+	    {
+	      for(ii=0;ii<crossDicke*2;ii++)
+		{
+		  pc[start+ii]=0x00;
+		}
+	      start+=zeile;
+	    }
+
 	  for(i=0;i<h;i++)
 	    {
-	      if(i>148&&i<150)
+	      if(0)//i>148&&i<150)
 		{
 		  memcpy(cap->sdlOverlay->pixels[0]+i*wMalVier+offset,leerbuf, wMalZwei);
 		}
@@ -936,23 +998,13 @@ long_options [] = {
         { 0, 0, 0, 0 }
 };
 
-#define SDLWIDTH 1024//800
-#define SDLHEIGHT 768//600
 
-static struct v4l_capture capt;
-static struct v4l_capture capt2;
-
-static SDL_Surface * mainSurface;
-
-static int DEVICES =1;
-
-static SDL_Overlay * theoverlay= 0; 
 
 int main(int argc,char ** argv)
 {
   int bpp = 32;
-  int i;
-  struct v4l_capture acap[2];
+  SDL_Surface * mainSurface;
+  int Pixelformat = 0;
 
   // Start SDL
   if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
@@ -1022,7 +1074,7 @@ int main(int argc,char ** argv)
       DEVICES=2;
       break;
     case 'j':
-      PixFormat=1;
+      Pixelformat=1;
       break;
       
       
@@ -1032,25 +1084,50 @@ int main(int argc,char ** argv)
     }
   }
 
-
-  acap[0]=capt;
-  acap[1]=capt2;
 #define CAMWIDTH 352
 #define CAMHEIGHT 288
-  #define DauerSelect 300
+#define DauerSelect 300
+
+  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat);
+
+  if(2==DEVICES)
+    mainloop (&acap[0],&acap[1],DauerSelect);
+  else
+    mainloop (&acap[0],0,DauerSelect);
+
+  printf ("cam1 : %i, cam2 : %i",counter1,counter2);
+
+
+  exit (EXIT_SUCCESS);
   
-  theoverlay = SDL_CreateYUVOverlay(CAMWIDTH*2,		\
-				    CAMHEIGHT,			\
+  return 0;
+}
+
+  void cap_init(SDL_Surface * surface,		\
+		unsigned int camWidth,		\
+		unsigned int camHeight,		\
+		int zoom,\
+		int pixelFormat)
+{
+  int i = 0;
+  PixFormat = pixelFormat;
+  acap[0]=capt;
+  acap[1]=capt2;
+  
+  SDL_FreeYUVOverlay(theoverlay);
+
+  theoverlay = SDL_CreateYUVOverlay(camWidth*2,			\
+				    camHeight,			\
 				    SDL_YUY2_OVERLAY,		\
-				    mainSurface);
+				    surface);
 
   for(i=0;i<DEVICES;i++)
     { 
       init_v4l_caputre(&acap[i],			\
 		       CAMWIDTH,			\
 		       CAMHEIGHT,			\
-		       0,\
-		       mainSurface,			\
+		       zoom,\
+		       surface,			\
 		       theoverlay);
     }
 
@@ -1079,12 +1156,11 @@ int main(int argc,char ** argv)
     {  
       start_capturing (&acap[i]);
     }  
-  if(2==DEVICES)
-    mainloop (&acap[0],&acap[1],DauerSelect);
-  else
-    mainloop (&acap[0],0,DauerSelect);
+}
 
-  printf ("cam1 : %i, cam2 : %i",counter1,counter2);
+void cap_uninit()
+{
+  int i = 0;
 
   for(i=0;i<DEVICES;i++)
     {  
@@ -1099,9 +1175,4 @@ int main(int argc,char ** argv)
     { 
       close_device (&acap[i].fd);
     }
-  
-  exit (EXIT_SUCCESS);
-  
-  return 0;
 }
-
