@@ -71,19 +71,15 @@ struct v4l_capture
   SDL_Overlay * sdlOverlay;
   SDL_Rect sdlRect;
   int camnumber;
+  int camWidth;
+  int camHeight;
 };
 
 static int PixFormat = 0;
-//static SDL_Overlay * sdlOverlay;
-//static SDL_Rect sdlRect = {.w=THEWIDTH,.h=THEHEIGHT,.x=50,.y=50};
-
-int initSDL(void)
-{
-
-    return 0;
-}
-
 static SDL_Surface * pCrossair;
+
+static void setOverlayArea(struct v4l_capture* cap,int Zoom);
+
 static SDL_Surface * getCrossair()
 {
   if(pCrossair)
@@ -92,21 +88,6 @@ static SDL_Surface * getCrossair()
     }
   else
     {
-      /*         SDL_PixelFormat * format = SDL_GetVideoSurface()->format;
-      pCrossair=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA,		\
-			       300,					\
-			       300,					\
-				     24,	\
-			       format->Rmask,				\
-			       format->Gmask,				\
-			       format->Bmask,				\
-			       format->Amask);  
-      if(!pCrossair)
-	{
-	  return 0;
-	}
-      Uint32 color = SDL_MapRGB(SDL_GetVideoSurface()->format,0xff,0x33,0xcc);
-      SDL_FillRect(pCrossair,0,color);*/
       SDL_Surface * tmp = 0;
       //normal
       tmp = IMG_Load("crossair.png");
@@ -154,13 +135,36 @@ static SDL_Surface * getCrossair2()
     }
 }
 
+static void setOverlayArea(struct v4l_capture* cap,int Zoom)
+{
+  if(cap==0)
+    return;
+
+  cap->sdlRect.x = cap->mainSurface->w/2-cap->camWidth;
+  cap->sdlRect.y = 10;
+  cap->sdlRect.w = cap->camWidth*2;
+  cap->sdlRect.h = cap->camHeight;
+
+  if(Zoom)
+    {
+      cap->sdlRect.x = cap->sdlRect.x - cap->camWidth;
+      cap->sdlRect.w = cap->sdlRect.w*2;
+      cap->sdlRect.h = cap->sdlRect.h*2;
+    }
+}
+
+/*void cap_setZoom(int Zoom)
+{
+  
+}*/
+
 void init_v4l_caputre(struct v4l_capture * cap,	\
-		     Sint16 x,			\
-		     Sint16 y,			\
-		     Uint16 w,			\
-		     Uint16 h,			\
-		     SDL_Surface * display	\
-		     )
+		      int w,			\
+		      int h,			\
+		      int Zoom,			\
+		      SDL_Surface * display,	\
+		      SDL_Overlay * overlay	\
+		      )
 {
   cap->dev_name        = 0;
   cap->io	= IO_METHOD_MMAP;
@@ -169,19 +173,17 @@ void init_v4l_caputre(struct v4l_capture * cap,	\
   cap->n_buffers       = 0;
   cap->cam             =CAM_OTHER;
   cap->mainSurface = display;
-  cap->sdlRect.w = w;
-  cap->sdlRect.h = h;
-  cap->sdlRect.x = x;
-  cap->sdlRect.y = y;
+  cap->sdlRect.w = 0;
+  cap->sdlRect.h = 0;
+  cap->sdlRect.x = 0;
+  cap->sdlRect.y = 0;
+  cap->camWidth = w;
+  cap->camHeight = h;
   
-  cap->sdlOverlay = SDL_CreateYUVOverlay(w,			\
-					 h,			\
-					 SDL_YUY2_OVERLAY,	\
-					 cap->mainSurface);
-  //printf("Overlay planes = %i\n",sdlOverlay->planes);
-  //sdlOverlay->planes = 3; 
-  // Ignore alpha channel, go opaque
-  //    SDL_SetAlpha( app->image, 0, 0 );
+  cap->sdlOverlay = overlay;
+  
+  setOverlayArea(cap,Zoom);
+
 }
 
 
@@ -212,8 +214,6 @@ SDL_RWops * rw;
 SDL_Surface  * pSjpeg;
       if(CAM_LOGITEC==cap->cam)
 	{
-	  //SDL_RWops * rw;
-	  //SDL_Surface  * pSjpeg;
 	  rw = SDL_RWFromConstMem(p,len);
 	  if(0==rw)
 	    {
@@ -232,12 +232,6 @@ SDL_Surface  * pSjpeg;
 	    }
 
 	  pSjpeg = IMG_LoadJPG_RW(rw);
-
-	  /*pSjpeg=IMG_Load("test.jpg");
-	  if(!pSjpeg) {
-	    printf("IMG_Load: %s\n", IMG_GetError());
-	    errno_exit("IMG_Load failed\n");
-	    }*/
 	  
 	  if(0==pSjpeg)
 	    {
@@ -262,52 +256,7 @@ SDL_Surface  * pSjpeg;
 	}
       else
 	{
-	  /*
-	  //record file
-	  static int thefd = 0;
-	  static int count = 0;
-	  if(!thefd)
-	    {
-	      thefd = open("mjpeg2",O_RDWR| O_CREAT |O_APPEND);
-	    }
-	  count++;
-	  if(count<=5)
-	    {
-	      write(thefd,p,len);
-	    }
-	  else
-	    {
-	      close(thefd);
-	      exit(0);
-	    }
-	  */
-	  /*	  rw = SDL_RWFromConstMem(p,len);
-	  if(0==rw)
-	    {
-	      printf("error SDL_RWFromConstMem\n");
-	      errno_exit ("SDL stuff");
-	    }
-	  if(IMG_isJPG(rw))
-	    {
-	       printf("sample.jpg is a JPG file.\n");
-	       SDL_FreeRW(rw);
-	    }
-	  else
-	    {
-	      printf("sample.jpg is not a JPG file, or JPG support is not available.\n");
-	      SDL_FreeRW(rw);
-	      //errno_exit ("SDL IMG_isJPG");
-	    }
-	  */
-	  /*SDL_Rect tmprect;
-	  tmprect.w=THEWIDTH;
-	  tmprect.h=THEHEIGHT;
-	  tmprect.x=sdlRect.x+THEWIDTH;
-	  tmprect.y=sdlRect.y=THEHEIGHT;
-	  */
-	  //printf("%i\n", p);
-	  //SDL_BlitSurface(getCrossair(),0,cap->mainSurface,0);
-	  //SDL_Flip(cap->mainSurface);
+
 	  SDL_LockSurface(cap->mainSurface);
 	  SDL_LockYUVOverlay(cap->sdlOverlay);
 	  
@@ -316,55 +265,8 @@ SDL_Surface  * pSjpeg;
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
 
-	  //counter++;
-	  //if(counter<=1)
-	  //  {
-	  //   counter=0;
-	  //if(cam0ready&&cam1ready)
-	  //  {
-	  //    cam0ready=0;
-	  //    cam1ready=0;
 	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
-	      //  }
-
-	  /*	  char * pc = (char*)p;
-	  int i=0;
-	  for(i=0;i<len-5;i++)
-	    {
-	      if(pc[i]=='!')
-		{
-		  if(pc[i+1]=='A'&&pc[i+2]=='V'&&pc[i+3]=='I'\
-		     &&pc[i+4]=='1')
-		    {
-		       printf("!AVI1 found\n"); 
-		       break;
-		    }
-		}
-	      if(pc[i]=='J')
-		{
-		  if(pc[i+1]=='F'&&pc[i+2]=='I'&&pc[i+3]=='F')
-		    {
-		       printf("JFIF found\n"); 
-		       break;
-		    }
-		}
-		}*/
-	  
-	  
-	  
-
-	  //SDL_Surface * psur = 
-	  
-	  //SDL_DisplayYUVOverlay(sdlOverlay, &tmprect);
 	}
-      /*
-      SDL_LockYUVOverlay(sdlOverlay); 
-      *sdlOverlay->pixels = p;
-      SDL_UnlockYUVOverlay(sdlOverlay); 
-      i = SDL_DisplayYUVOverlay(sdlOverlay,&sdlRect);
-      */
-      //fputc ('.', stdout);
-      // fflush (stdout);
     }
   else if(method==IO_METHOD_USERPTR)
     {
@@ -389,16 +291,7 @@ SDL_Surface  * pSjpeg;
 	      SDL_FreeRW(rw);
 	      errno_exit ("SDL IMG_isJPG");
 	    }
-	  
-
 	  pSjpeg = IMG_LoadJPG_RW(rw);
-
-	  /*pSjpeg=IMG_Load("test.jpg");
-	  if(!pSjpeg) {
-	    printf("IMG_Load: %s\n", IMG_GetError());
-	    errno_exit("IMG_Load failed\n");
-	    }*/
-	  
 	  if(0==pSjpeg)
 	    {
 	      printf("IMG_LoadJPG_RW: %s\n", IMG_GetError());
@@ -428,11 +321,8 @@ SDL_Surface  * pSjpeg;
     }
 }
 static char leerbuf[1024];
-/***************************************************************
- ***************************************************************
- ***************************************************************
- ***************************************************************
- ***************************************************************/
+
+/***************************************************************/
 static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len)
 {
   int i;
@@ -447,19 +337,22 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  SDL_LockSurface(cap->mainSurface);
 	  SDL_LockYUVOverlay(cap->sdlOverlay);
 	  
-	  int w = cap->sdlRect.w;
-	  int h = cap->sdlRect.h;
+	  int w = cap->camWidth;
+	  int h = cap->camHeight;
 	  int alles = 0;
 	  int cam = cap->camnumber;
+	  int wMalZwei = w*2;
+	  int wMalVier = w*4;
+	  int offset = cam*wMalZwei;
 	  for(i=0;i<h;i++)
 	    {
 	      if(i>148&&i<150)
 		{
-		  memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,leerbuf, w*2);
+		  memcpy(cap->sdlOverlay->pixels[0]+i*wMalVier+offset,leerbuf, wMalZwei);
 		}
 	      else
 		{
-		  memcpy(cap->sdlOverlay->pixels[0]+i*w*4+cam*w*2,p+alles, w*2);	      
+		  memcpy(cap->sdlOverlay->pixels[0]+i*wMalVier+offset,p+alles, wMalZwei);
 		}
 	      alles += w*2;
 	    }
@@ -467,12 +360,9 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  SDL_UnlockYUVOverlay(cap->sdlOverlay);
 	  SDL_UnlockSurface(cap->mainSurface);
 
-	  SDL_Rect tmpRect = cap->sdlRect;
-	  tmpRect.x = 10;
-	  tmpRect.y = 100;
-	  tmpRect.h=tmpRect.h*MULTIPLIKATOR;//*2;//untereinander
-	  tmpRect.w=tmpRect.w*2*MULTIPLIKATOR;//*4;//nebeneinander
-	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &tmpRect);
+	  /*tmpRect.h=tmpRect.h*MULTIPLIKATOR;*2;//untereinander
+	  tmpRect.w=tmpRect.w*2*MULTIPLIKATOR;*4;//nebeneinander*/
+	  SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
 	}
       }
   else if(method==IO_METHOD_USERPTR)
@@ -587,10 +477,6 @@ static int counter2=0;
 static void mainloop(struct v4l_capture * cap,	\
 		     struct v4l_capture * cap2,int count)
 {
-  //	unsigned int count;
-
-  //        count = 300;
-
         while (count-- > 0) {
                 for (;;) {
                         fd_set fds;
@@ -916,7 +802,6 @@ static void init_device(struct v4l_capture * cap)
 
         /* Select video input, video standard and tune here. */
 
-
 	CLEAR (cropcap);
 
         cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -943,8 +828,8 @@ static void init_device(struct v4l_capture * cap)
         CLEAR (fmt);
 
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        fmt.fmt.pix.width       = cap->sdlRect.w;//160;//320; 
-        fmt.fmt.pix.height      = cap->sdlRect.h;//120;//240;
+        fmt.fmt.pix.width       = cap->camWidth;//160;//320; 
+        fmt.fmt.pix.height      = cap->camHeight;//120;//240;
 	if(CAM_LOGITEC==cap->cam)
 	  {
 	    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
@@ -1051,10 +936,6 @@ long_options [] = {
         { 0, 0, 0, 0 }
 };
 
-
-//#define THEWIDTH 160//800//640//1280//160
-//#define THEHEIGHT 120//448//480//720//120
-
 #define SDLWIDTH 1024//800
 #define SDLHEIGHT 768//600
 
@@ -1082,7 +963,7 @@ int main(int argc,char ** argv)
   atexit( SDL_Quit );
   
   // Create a window the size of the display
-  SDL_WM_SetCaption( "camview", NULL );
+  SDL_WM_SetCaption( "MBE", NULL );
   mainSurface = SDL_SetVideoMode( SDLWIDTH,
 				  SDLHEIGHT,
 				  bpp, SDL_HWSURFACE);//SDL_SWSURFACE );
@@ -1157,36 +1038,22 @@ int main(int argc,char ** argv)
 #define CAMWIDTH 352
 #define CAMHEIGHT 288
   #define DauerSelect 300
-
-  for(i=0;i<DEVICES;i++)
-    { 
-      init_v4l_caputre(&acap[i],\
-		       10,\
-/*(SDLWIDTH/2)+((i-1)*CAMWIDTH),	\*/
-		       10,\
-		       CAMWIDTH,\
-		       CAMHEIGHT,			\
-		       mainSurface);
-      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,640,480,mainSurface);
-      //init_v4l_caputre(&acap[i],50+150*i,50+150*i,160,120,mainSurface);
-	     //init_v4l_caputre(&acap[i],50+150*i,50+150*i,352,288,mainSurface);
-    }
-
-  //alle devices das selbe Overlay  
-  for(i=0;i<DEVICES;i++)
-    {   
-      SDL_FreeYUVOverlay(acap[i].sdlOverlay);
-    }
   
-  theoverlay = SDL_CreateYUVOverlay(CAMWIDTH*2,			\
-				    CAMHEIGHT,		\
+  theoverlay = SDL_CreateYUVOverlay(CAMWIDTH*2,		\
+				    CAMHEIGHT,			\
 				    SDL_YUY2_OVERLAY,		\
 				    mainSurface);
 
-    for(i=0;i<DEVICES;i++)
-    {   
-      acap[i].sdlOverlay=theoverlay;
+  for(i=0;i<DEVICES;i++)
+    { 
+      init_v4l_caputre(&acap[i],			\
+		       CAMWIDTH,			\
+		       CAMHEIGHT,			\
+		       0,\
+		       mainSurface,			\
+		       theoverlay);
     }
+
     //+++++++++++++++++++++++++++
 
   for(i=0;i<DEVICES;i++)
@@ -1198,12 +1065,6 @@ int main(int argc,char ** argv)
 	acap[i].dev_name =  "/dev/video0";
     }
   
-
-  if(initSDL())
-    {
-      printf("initSDL failed\n");
-    }
-
   for(i=0;i<DEVICES;i++)
     {
       open_device (&acap[i],&acap[i].fd);
