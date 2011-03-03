@@ -1017,8 +1017,8 @@ long_options [] = {
         { 0, 0, 0, 0 }
 };
 
-#define SDLWIDTH 1024//800
-#define SDLHEIGHT 768//600
+#define SDLWIDTH 720//1024//800
+#define SDLHEIGHT 576//768//600
 
 int capMain(int argc,char ** argv)
 {
@@ -1107,19 +1107,19 @@ int capMain(int argc,char ** argv)
 
 #define CAMWIDTH 352
 #define CAMHEIGHT 288
-#define DauerSelect 300
+#define DauerSelect 120
 
   cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat);
 
   if(2==DEVICES)
     {
-      if(cap_cam_init(&capt,"/dev/video0"))
+      if(cap_cam_init(0)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
 	}
 
-      if(cap_cam_init(&capt2,"/dev/video1"))
+      if(cap_cam_init(1)<0)
 	{
 	  printf("cap_cam_init for /dev/video1 failed!\n");
 	  return -1;
@@ -1135,7 +1135,7 @@ int capMain(int argc,char ** argv)
     }
   else
     {
-      if(cap_cam_init(&capt,"/dev/video0"))
+      if(cap_cam_init(0)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
@@ -1173,11 +1173,22 @@ void cap_init(SDL_Surface * surface,		\
 				    mainSurface);  
 }
 
-int cap_cam_init(struct v4l_capture * cap,	\
-		 char * path)
+int cap_cam_init(int camera)
 {
   int ret=0;
-  cap->dev_name        = path;
+  struct v4l_capture * cap;
+  if(camera)
+    {
+      cap = &capt2;
+      cap->dev_name        = "/dev/video1";
+    }
+  else
+    {
+      cap = &capt;
+      cap->dev_name        = "/dev/video0";
+    }
+
+  
   cap->io	= IO_METHOD_MMAP;
   cap->fd              = -1;
   cap->buffers         = 0;
@@ -1207,7 +1218,7 @@ int cap_cam_init(struct v4l_capture * cap,	\
   if(ret)
     return -3;
   
-  return 0;
+  return cap->fd;
 }
 
 int cap_uninit()
