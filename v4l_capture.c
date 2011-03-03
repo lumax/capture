@@ -85,16 +85,17 @@ static void init_v4l_caputre(struct v4l_capture * cap,	\
 			     SDL_Overlay * overlay	\
 			     );
 static void errno_exit(const char * err);
+static void errno_print(const char * err);
 static int xioctl(struct v4l_capture * cap,int request,void * arg);
 static void process_image(struct v4l_capture* cap,const void * p,int method,size_t len);
 static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len);
 static int read_frame(struct v4l_capture * cap);
-static void stop_capturing(struct v4l_capture * cap);
-static void start_capturing(struct v4l_capture * cap);
-static void uninit_device(struct v4l_capture * cap);
+static int stop_capturing(struct v4l_capture * cap);
+static int start_capturing(struct v4l_capture * cap);
+static int uninit_device(struct v4l_capture * cap);
 static void init_read(struct v4l_capture * cap,unsigned int buffer_size);
-static void open_device(struct v4l_capture * cap,int * fd);
-static void init_device(struct v4l_capture * cap);
+static int open_device(struct v4l_capture * cap,int * fd);
+static int init_device(struct v4l_capture * cap);
 
 static int PixFormat = 0;
 static SDL_Surface * pCrossair;
@@ -224,6 +225,12 @@ static void errno_exit(const char *           s)
                  s, errno, strerror (errno));
 
         exit (EXIT_FAILURE);
+}
+
+static void errno_print(const char *           s)
+{
+        fprintf (stderr, "%s error %d, %s\n",
+                 s, errno, strerror (errno));
 }
 
 static int xioctl(struct v4l_capture * cap,int request,void * arg)
@@ -609,7 +616,7 @@ static void mainloop(struct v4l_capture * cap,	\
         }
 }
 
-static void stop_capturing(struct v4l_capture * cap)
+static int stop_capturing(struct v4l_capture * cap)
 {
         enum v4l2_buf_type type;
 
@@ -623,13 +630,17 @@ static void stop_capturing(struct v4l_capture * cap)
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 		if (-1 == xioctl (cap, VIDIOC_STREAMOFF, &type))
-			errno_exit ("VIDIOC_STREAMOFF");
+		  {
+			errno_print ("VIDIOC_STREAMOFF");
+			return -1;
+		  }
 
 		break;
 	}
+	return 0;
 }
 
-static void start_capturing(struct v4l_capture * cap)
+static int start_capturing(struct v4l_capture * cap)
 {
         unsigned int i;
         enum v4l2_buf_type type;
@@ -650,13 +661,19 @@ static void start_capturing(struct v4l_capture * cap)
         		buf.index       = i;
 
         		if (-1 == xioctl (cap, VIDIOC_QBUF, &buf))
-                    		errno_exit ("VIDIOC_QBUF");
+			  {
+			    errno_print ("VIDIOC_QBUF");
+			    return -1;
+			  }
 		}
 		
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 		if (-1 == xioctl (cap, VIDIOC_STREAMON, &type))
-			errno_exit ("VIDIOC_STREAMON");
+		  {
+			errno_print ("VIDIOC_STREAMON");
+			return -1;
+		  }
 
 		break;
 
@@ -673,19 +690,26 @@ static void start_capturing(struct v4l_capture * cap)
 			buf.length      = cap->buffers[i].length;
 
 			if (-1 == xioctl (cap, VIDIOC_QBUF, &buf))
-                    		errno_exit ("VIDIOC_QBUF");
+			  {
+                    		errno_print ("VIDIOC_QBUF");
+				return -1;
+			  }
 		}
 
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 		if (-1 == xioctl (cap, VIDIOC_STREAMON, &type))
-			errno_exit ("VIDIOC_STREAMON");
+		  {
+			errno_print ("VIDIOC_STREAMON");
+			return -1;
+		  }
 
 		break;
 	}
+	return 0;
 }
 
-static void uninit_device(struct v4l_capture * cap)
+static int uninit_device(struct v4l_capture * cap)
 {
         unsigned int i;
 
@@ -697,7 +721,10 @@ static void uninit_device(struct v4l_capture * cap)
 	case IO_METHOD_MMAP:
 		for (i = 0; i < cap->n_buffers; ++i)
 			if (-1 == munmap (cap->buffers[i].start, cap->buffers[i].length))
-				errno_exit ("munmap");
+			  {
+				errno_print ("munmap");
+				return -1;
+			  }
 		break;
 
 	case IO_METHOD_USERPTR:
@@ -707,6 +734,7 @@ static void uninit_device(struct v4l_capture * cap)
 	}
 
 	free (cap->buffers);
+	return 0;
 }
 
 static void init_read(struct v4l_capture * cap,unsigned int buffer_size)
@@ -727,7 +755,7 @@ static void init_read(struct v4l_capture * cap,unsigned int buffer_size)
 	}
 }
 
-static void init_mmap(struct v4l_capture * cap)
+static int init_mmap(struct v4l_capture * cap)
 {
 	struct v4l2_requestbuffers req;
 
@@ -741,23 +769,24 @@ static void init_mmap(struct v4l_capture * cap)
                 if (EINVAL == errno) {
                         fprintf (stderr, "%s does not support "
                                  "memory mapping\n", cap->dev_name);
-                        exit (EXIT_FAILURE);
+                        return -1;
                 } else {
-                        errno_exit ("VIDIOC_REQBUFS");
+                        errno_print ("VIDIOC_REQBUFS");
+			return -1;
                 }
         }
 
         if (req.count < 2) {
                 fprintf (stderr, "Insufficient buffer memory on %s\n",
                          cap->dev_name);
-                exit (EXIT_FAILURE);
+                return -1;
         }
 
         cap->buffers = calloc (req.count, sizeof (*cap->buffers));
 
         if (!cap->buffers) {
                 fprintf (stderr, "Out of memory\n");
-                exit (EXIT_FAILURE);
+                return -1;
         }
 
         for (cap->n_buffers = 0; cap->n_buffers < req.count; ++cap->n_buffers) {
@@ -770,7 +799,10 @@ static void init_mmap(struct v4l_capture * cap)
                 buf.index       = cap->n_buffers;
 
                 if (-1 == xioctl (cap, VIDIOC_QUERYBUF, &buf))
-                        errno_exit ("VIDIOC_QUERYBUF");
+		  {
+                        errno_print ("VIDIOC_QUERYBUF");
+			return -1;
+		  }
 
                 cap->buffers[cap->n_buffers].length = buf.length;
                 cap->buffers[cap->n_buffers].start =
@@ -781,8 +813,12 @@ static void init_mmap(struct v4l_capture * cap)
                               cap->fd, buf.m.offset);
 
                 if (MAP_FAILED == cap->buffers[cap->n_buffers].start)
-                        errno_exit ("mmap");
+		  {
+		    errno_print ("mmap");
+		    return -1;
+		  }
         }
+	return 0;
 }
 
 static void init_userp(struct v4l_capture * cap,unsigned int buffer_size)
@@ -828,7 +864,7 @@ static void init_userp(struct v4l_capture * cap,unsigned int buffer_size)
         }
 }
 
-static void init_device(struct v4l_capture * cap)
+static int init_device(struct v4l_capture * cap)
 {
         struct v4l2_capability capability;
         struct v4l2_cropcap cropcap;
@@ -840,16 +876,17 @@ static void init_device(struct v4l_capture * cap)
                 if (EINVAL == errno) {
                         fprintf (stderr, "%s 1is no V4L2 device\n",
                                  cap->dev_name);
-                        exit (EXIT_FAILURE);
+                        return -1;
                 } else {
-                        errno_exit ("VIDIOC_QUERYCAP");
+		  errno_print("VIDIOC_QUERYCAP");
+		  return -1;
                 }
         }
 
         if (!(capability.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
                 fprintf (stderr, "%s 2is no video capture device\n",
                          cap->dev_name);
-                exit (EXIT_FAILURE);
+                return -1;
         }
 
 	switch (cap->io) {
@@ -857,7 +894,7 @@ static void init_device(struct v4l_capture * cap)
 		if (!(capability.capabilities & V4L2_CAP_READWRITE)) {
 			fprintf (stderr, "%s does not support read i/o\n",
 				 cap->dev_name);
-			exit (EXIT_FAILURE);
+			return -1;
 		}
 
 		break;
@@ -867,7 +904,7 @@ static void init_device(struct v4l_capture * cap)
 		if (!(capability.capabilities & V4L2_CAP_STREAMING)) {
 			fprintf (stderr, "%s does not support streaming i/o\n",
 				 cap->dev_name);
-			exit (EXIT_FAILURE);
+			return -1;
 		}
 
 		break;
@@ -920,7 +957,10 @@ static void init_device(struct v4l_capture * cap)
 	//	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
         if (-1 == xioctl (cap, VIDIOC_S_FMT, &fmt))
-                errno_exit ("VIDIOC_S_FMT");
+	  {
+	    errno_print ("VIDIOC_S_FMT");
+	    return -1;
+	  }
 
         /* Note VIDIOC_S_FMT may change width and height. */
 
@@ -938,37 +978,45 @@ static void init_device(struct v4l_capture * cap)
 		break;
 
 	case IO_METHOD_MMAP:
-		init_mmap (cap);
-		break;
+	  if(init_mmap (cap))
+	    {
+	      return -1;
+	    }
+	      break;
 
 	case IO_METHOD_USERPTR:
 	  init_userp (cap,fmt.fmt.pix.sizeimage);
 		break;
 	}
+	return 0;
 }
 
-static void
+static int
 close_device                    (int * fd )
 {
         if (-1 == close (*fd))
-	        errno_exit ("close");
+	  {
+	    errno_print ("close");
+	    return -1;
+	  }
 
         *fd = -1;
+	return 0;
 }
 
-static void open_device(struct v4l_capture * cap,int * fd)
+static int open_device(struct v4l_capture * cap,int * fd)
 {
         struct stat st; 
 
         if (-1 == stat (cap->dev_name, &st)) {
                 fprintf (stderr, "Cannot identify '%s': %d, %s\n",
                          cap->dev_name, errno, strerror (errno));
-                exit (EXIT_FAILURE);
+                return -1;
         }
 
         if (!S_ISCHR (st.st_mode)) {
                 fprintf (stderr, "%s is no device\n", cap->dev_name);
-                exit (EXIT_FAILURE);
+                return -1;
         }
 
         *fd = open (cap->dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
@@ -976,8 +1024,9 @@ static void open_device(struct v4l_capture * cap,int * fd)
         if (-1 == *fd) {
                 fprintf (stderr, "Cannot open '%s': %d, %s\n",
                          cap->dev_name, errno, strerror (errno));
-                exit (EXIT_FAILURE);
+                return -1;
         }
+	return 0;
 }
 
 static void usage(FILE * fp,int argc,char ** argv)
