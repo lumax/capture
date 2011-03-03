@@ -38,9 +38,8 @@ struct v4l_capture
 		       int zoom,		\
 		       int pixelFormat);
   extern int cap_cam_init(struct v4l_capture * cap,	\
-			  char * path,			\
-			  int Zoom);
-  extern int cap_uninit(struct v4l_capture * cap);
+			  char * path);
+  extern int cap_uninit();
   extern int capMain(int args, char ** argv);
   
 #ifdef __cplusplus

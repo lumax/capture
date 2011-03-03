@@ -71,6 +71,7 @@ static int uninit_device(struct v4l_capture * cap);
 static void init_read(struct v4l_capture * cap,unsigned int buffer_size);
 static int open_device(struct v4l_capture * cap,int * fd);
 static int init_device(struct v4l_capture * cap);
+static int cap_cam_uninit(struct v4l_capture * cap);
 
 static int PixFormat = 0;
 static int Zoom = 0;
@@ -1107,19 +1108,18 @@ int capMain(int argc,char ** argv)
 #define CAMWIDTH 352
 #define CAMHEIGHT 288
 #define DauerSelect 300
-#define ZOOM 0
 
-  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,ZOOM,Pixelformat);
+  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat);
 
   if(2==DEVICES)
     {
-      if(cap_cam_init(&capt,"/dev/video0",ZOOM))
+      if(cap_cam_init(&capt,"/dev/video0"))
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
 	}
 
-      if(cap_cam_init(&capt2,"/dev/video1",ZOOM))
+      if(cap_cam_init(&capt2,"/dev/video1"))
 	{
 	  printf("cap_cam_init for /dev/video1 failed!\n");
 	  return -1;
@@ -1129,15 +1129,13 @@ int capMain(int argc,char ** argv)
 	 
       printf ("cam1 : %i, cam2 : %i",counter1,counter2);
       
-      if(cap_uninit(&capt))
+            if(cap_uninit())
 	printf("cap_uninit capt failed!\n");
       
-      if(cap_uninit(&capt2))
-	printf("cap_uninit capt failed!\n");
     }
   else
     {
-      if(cap_cam_init(&capt,"/dev/video0",ZOOM))
+      if(cap_cam_init(&capt,"/dev/video0"))
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
@@ -1147,7 +1145,7 @@ int capMain(int argc,char ** argv)
 	 
       printf ("cam1 : %i, cam2 : %i",counter1,counter2);
       
-      if(cap_uninit(&capt))
+      if(cap_cam_uninit(&capt))
 	printf("cap_uninit capt failed!\n");
       
     }
@@ -1176,8 +1174,7 @@ void cap_init(SDL_Surface * surface,		\
 }
 
 int cap_cam_init(struct v4l_capture * cap,	\
-		 char * path,			\
-		 int Zoom)
+		 char * path)
 {
   int ret=0;
   cap->dev_name        = path;
@@ -1213,7 +1210,16 @@ int cap_cam_init(struct v4l_capture * cap,	\
   return 0;
 }
 
-int cap_uninit(struct v4l_capture * cap)
+int cap_uninit()
+{
+  if(cap_cam_uninit(&capt)||cap_cam_uninit(&capt2))
+    {
+      return -1;
+    }
+  return 0;
+}
+
+static int cap_cam_uninit(struct v4l_capture * cap)
 {
   int ret = 0;
   if(theoverlay)
