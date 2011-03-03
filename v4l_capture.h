@@ -8,6 +8,28 @@ Bastian Ruppert
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef enum {
+	IO_METHOD_READ,
+	IO_METHOD_MMAP,
+	IO_METHOD_USERPTR,
+} io_method;
+
+struct v4l_capture
+{
+  char *          dev_name;
+  io_method	 io;
+  int             fd;
+  struct buffer * buffers;
+  unsigned int    n_buffers;
+  int cam;
+  SDL_Surface * mainSurface;
+  SDL_Overlay * sdlOverlay;
+  SDL_Rect sdlRect;
+  int camnumber;
+  int camWidth;
+  int camHeight;
+};
 extern void cap_setZoom(int Zoom);
 extern void cap_init(SDL_Surface * surface,	\
 		     unsigned int camWidth,	\

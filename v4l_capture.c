@@ -49,31 +49,9 @@
 #define CAM_OTHER 0
 #define CAM_LOGITEC 1
 
-typedef enum {
-	IO_METHOD_READ,
-	IO_METHOD_MMAP,
-	IO_METHOD_USERPTR,
-} io_method;
-
 struct buffer {
         void *                  start;
         size_t                  length;
-};
-
-struct v4l_capture
-{
-  char *          dev_name;
-  io_method	 io;
-  int             fd;
-  struct buffer * buffers;
-  unsigned int    n_buffers;
-  int cam;
-  SDL_Surface * mainSurface;
-  SDL_Overlay * sdlOverlay;
-  SDL_Rect sdlRect;
-  int camnumber;
-  int camWidth;
-  int camHeight;
 };
 
 static void setOverlayArea(struct v4l_capture* cap,int Zoom);
@@ -103,8 +81,8 @@ static SDL_Surface * pCrossair;
 #define SDLWIDTH 1024//800
 #define SDLHEIGHT 768//600
 
-static struct v4l_capture capt;
-static struct v4l_capture capt2;
+static struct v4l_capture capt = {.camnumber=0};
+static struct v4l_capture capt2 = {.camnumber=1};
 
 static int DEVICES = 1;
 
@@ -1147,7 +1125,7 @@ int capMain(int argc,char ** argv)
 
 #define CAMWIDTH 352
 #define CAMHEIGHT 288
-#define DauerSelect 300
+#define DauerSelect 30
 
   cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat,DEVICES);
 
