@@ -339,7 +339,7 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  int wMalZwei = w*2;
 	  int wMalVier = w*4;
 	  int offset = cam*wMalZwei;
-	  /*
+
 	  //Fadenkreuz	  
 	  unsigned int crossBreite = 88;
 	  unsigned int crossDicke = 4;
@@ -361,7 +361,7 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 	  int start = crossX*2+zeile*crossY;
 	  //int lineoffset = crossY*h*4;
 	  char * pc = (char *)p;
-	  
+
 	  //horizontale Linie
 	  for(i=0;i<crossDicke;i++)
 	    {
@@ -381,7 +381,7 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
 		}
 	      start+=zeile;
 	    }
-	  */
+	  
 	  for(i=0;i<h;i++)
 	    {
 	      if(0)//i>148&&i<150)
@@ -1106,7 +1106,7 @@ int capMain(int argc,char ** argv)
 
 #define CAMWIDTH 352
 #define CAMHEIGHT 288
-#define DauerSelect 30
+#define DauerSelect 300
 #define ZOOM 0
 
   cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,ZOOM,Pixelformat);
