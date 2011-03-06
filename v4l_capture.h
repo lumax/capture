@@ -33,6 +33,7 @@ struct v4l_capture
   int camnumber;
   int camWidth;
   int camHeight;
+  int camCrossX;
 };
 
   extern void cap_setZoom(int Zoom);
@@ -48,6 +49,7 @@ struct v4l_capture
   extern int cap_uninit();
   extern int capMain(int args, char ** argv);
   extern int cap_read_frame(int camera);
+  extern void cap_cam_addCrossX(int camNumber,int summand);
   
 #ifdef __cplusplus
 }

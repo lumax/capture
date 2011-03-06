@@ -1206,6 +1206,7 @@ int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*,	\
   cap->processFnk = fnk;
   cap->camWidth = camWidth;
   cap->camHeight = camHeight;
+  cap->camCrossX = camWidth/2;
   
   cap->sdlOverlay = theoverlay;
 
@@ -1262,4 +1263,26 @@ static int cap_cam_uninit(struct v4l_capture * cap)
       return -3;
       }
   return 0;
+}
+
+void cap_cam_addCrossX(int camNumber,int summand)
+{
+  struct v4l_capture * cap;
+  if(camNumber)
+    {
+      cap = &capt2;
+    }
+  else
+    {
+      cap = &capt;
+    }
+  cap->camCrossX +=summand;
+  if(cap->camCrossX < 2)
+    {
+      cap->camCrossX = 2;
+    }
+  else if(cap->camCrossX>cap->camWidth-2)
+    {
+      cap->camCrossX = cap->camWidth-2;
+    }
 }
