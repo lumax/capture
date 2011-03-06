@@ -75,7 +75,7 @@ static int cap_cam_uninit(struct v4l_capture * cap);
 
 static int PixFormat = 0;
 static int Zoom = 0;
-static SDL_Surface * pCrossair;
+//static SDL_Surface * pCrossair;
 
 static unsigned int camWidth;
 static unsigned int camHeight;
@@ -86,7 +86,7 @@ static struct v4l_capture capt2 = {.camnumber=1};
 static SDL_Overlay * theoverlay = 0; 
 static SDL_Surface * mainSurface = 0;
 
-static SDL_Surface * getCrossair()
+/*static SDL_Surface * getCrossair()
 {
   if(pCrossair)
     {
@@ -112,7 +112,8 @@ static SDL_Surface * getCrossair()
       return pCrossair;
     }
 }
-
+*/
+ /*
 static SDL_Surface * getCrossair2()
 {
   if(pCrossair)
@@ -125,7 +126,7 @@ static SDL_Surface * getCrossair2()
       pCrossair=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA,		\
 			       300,					\
 			       300,					\
-				     24/*FSGDEFAULTCOLORDEPTH*/,	\
+				     24,	\
 			       format->Rmask,				\
 			       format->Gmask,				\
 			       format->Bmask,				\
@@ -140,7 +141,7 @@ static SDL_Surface * getCrossair2()
       return pCrossair;
     }
 }
-
+*/
 static void setOverlayArea(struct v4l_capture* cap,int Zoom)
 {
   if(cap==0)
@@ -163,19 +164,6 @@ void cap_setZoom(int Zoom)
 {
   
 }
-
-static void init_v4l_caputre(struct v4l_capture * cap,	\
-		      int w,			\
-		      int h,			\
-		      int Zoom,			\
-		      SDL_Surface * display,	\
-		      SDL_Overlay * overlay	\
-		      )
-{
-
-
-}
-
 
 static void errno_exit(const char *           s)
 {
