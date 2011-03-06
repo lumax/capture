@@ -26,6 +26,10 @@ struct v4l_capture
   SDL_Surface * mainSurface;
   SDL_Overlay * sdlOverlay;
   SDL_Rect sdlRect;
+  void(*processFnk)(struct v4l_capture*,			\
+		    const void *,				\
+		    int,					\
+		    size_t);
   int camnumber;
   int camWidth;
   int camHeight;
@@ -37,9 +41,13 @@ struct v4l_capture
 		       unsigned int camHeight,	\
 		       int zoom,		\
 		       int pixelFormat);
-  extern int cap_cam_init(int camera);
+  extern int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*,	\
+						const void *,		\
+						int,		\
+						size_t));
   extern int cap_uninit();
   extern int capMain(int args, char ** argv);
+  extern int cap_read_frame(int camera);
   
 #ifdef __cplusplus
 }

@@ -415,6 +415,19 @@ static void process_image2(struct v4l_capture* cap,const void * p,int method,siz
     }
 }
 
+/*! \brief read camera-frame and processs data
+ *
+ * \param camera The cam to read
+ *  \return 1 on success, 0 on EAGAIN, -1 on error
+ */
+int cap_read_frame(int camera)
+{
+  if(camera)
+    return read_frame(&capt2);
+  else
+    return read_frame(&capt);
+}
+
 static int read_frame(struct v4l_capture * cap)
 {
         struct v4l2_buffer buf;
@@ -437,7 +450,7 @@ static int read_frame(struct v4l_capture * cap)
 			}
 		}
 
-    		process_image (cap,cap->buffers[0].start,IO_METHOD_READ,cap->buffers[0].length);
+    		(*cap->processFnk)(cap,cap->buffers[0].start,IO_METHOD_READ,cap->buffers[0].length);
 
 		break;
 
@@ -464,7 +477,7 @@ static int read_frame(struct v4l_capture * cap)
 
                 assert (buf.index < cap->n_buffers);
 
-	        process_image2 (cap,cap->buffers[buf.index].start,IO_METHOD_MMAP,cap->buffers[buf.index].length);
+	        (*cap->processFnk)(cap,cap->buffers[buf.index].start,IO_METHOD_MMAP,cap->buffers[buf.index].length);
 
 		if (-1 == xioctl (cap, VIDIOC_QBUF, &buf))
 			errno_exit ("VIDIOC_QBUF");
@@ -1113,13 +1126,13 @@ int capMain(int argc,char ** argv)
 
   if(2==DEVICES)
     {
-      if(cap_cam_init(0)<0)
+      if(cap_cam_init(0,process_image2)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
 	}
 
-      if(cap_cam_init(1)<0)
+      if(cap_cam_init(1,process_image2)<0)
 	{
 	  printf("cap_cam_init for /dev/video1 failed!\n");
 	  return -1;
@@ -1135,7 +1148,7 @@ int capMain(int argc,char ** argv)
     }
   else
     {
-      if(cap_cam_init(0)<0)
+      if(cap_cam_init(0,process_image2)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
@@ -1173,7 +1186,10 @@ void cap_init(SDL_Surface * surface,		\
 				    mainSurface);  
 }
 
-int cap_cam_init(int camera)
+int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*,	\
+				       const void *,		\
+				       int method,		\
+				       size_t len))
 {
   int ret=0;
   struct v4l_capture * cap;
@@ -1199,6 +1215,7 @@ int cap_cam_init(int camera)
   cap->sdlRect.h = 0;
   cap->sdlRect.x = 0;
   cap->sdlRect.y = 0;
+  cap->processFnk = fnk;
   cap->camWidth = camWidth;
   cap->camHeight = camHeight;
   
