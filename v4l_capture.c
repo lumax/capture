@@ -304,6 +304,124 @@ SDL_Surface  * pSjpeg;
         fflush (stdout);
     }
 }
+
+/***************************************************************/
+static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_t len)
+{
+  static int counter =0;
+  unsigned int i,ii;
+  unsigned char *framebuffer;
+  static unsigned char *fb0 = 0;
+  static unsigned char *fb1 = 0;
+  if(!fb0) {
+    fb0 =
+    (unsigned char *) calloc(1,
+			     (size_t) cap->camWidth*(cap->camHeight +
+						   8) * 2);
+  }
+  if(!fb1) {
+    fb1 =
+    (unsigned char *) calloc(1,
+			     (size_t) cap->camWidth*(cap->camHeight +
+						   8) * 2);
+  }
+  //if(cap->camnumber)
+  //  return;
+  if(counter<=50)
+    {
+      counter++;
+      return;
+    }
+  if(method==IO_METHOD_MMAP)
+    {
+      printf("pixelformat = MJPEG\n");
+
+      if(cap->camnumber)
+	{
+	  framebuffer = fb1;
+	}
+      else
+	{
+	  framebuffer = fb0;
+	}
+      i = jpeg_decode(&framebuffer,(unsigned char*)p,\
+		      &cap->camWidth,\
+		      &cap->camHeight);
+
+      
+      SDL_LockSurface(cap->mainSurface);
+      SDL_LockYUVOverlay(cap->sdlOverlay);
+
+      int w = cap->camWidth;
+      int h = cap->camHeight;
+      int alles = 0;
+      int cam = cap->camnumber;
+      int wMalZwei = w*2;
+      int wMalVier = w*4;
+      int offset = cam*wMalZwei;
+
+      //Fadenkreuz
+      unsigned int crossBreite = cap->camWidth;
+      unsigned int crossDicke = 2;
+      int zeile = w*2;
+      //unsigned int crossX = w/2-crossBreite/2;
+      //unsigned int crossY = h/2-crossDicke;
+      unsigned int crossX = cap->camCrossX;
+      unsigned int crossY = cap->camHeight/4*3;
+
+      int start = zeile*crossY;
+      //int lineoffset = crossY*h*4;
+      char * pc = (char *)framebuffer;
+      
+      //horizontale Linie
+      for(i=0;i<crossDicke;i++)
+	{
+	  for(ii=0;ii<crossBreite*2;ii++)
+	    {
+	      pc[start+ii]=0x00;
+	    }
+	  start+=zeile;
+	}
+      //vertikale Linie
+      start = (crossX*2);//+zeile*(crossBreite/2);
+      for(i=0;i<h;i++)
+	{
+	  for(ii=0;ii<crossDicke*2;ii++)
+	    {
+	      pc[start+ii]=0x00;
+	    }
+	  start+=zeile;
+	}
+      
+      /*  memcpy(cap->sdlOverlay->pixels[0], camCtrl->framebuffer,
+	     cap->camWidth * (cap->camHeight) *2);
+      */
+      for(i=0;i<h;i++)
+	{
+	  memcpy(cap->sdlOverlay->pixels[0]+i*wMalVier+offset,	\
+		 framebuffer+alles,\ 
+		 wMalZwei);
+	  alles += w*2;
+	  }
+      //printf("alles = %i, len = %i\n",alles,len);
+      SDL_UnlockYUVOverlay(cap->sdlOverlay);
+      SDL_UnlockSurface(cap->mainSurface);
+
+      /*tmpRect.h=tmpRect.h*MULTIPLIKATOR;*2;//untereinander
+	tmpRect.w=tmpRect.w*2*MULTIPLIKATOR;*4;//nebeneinander*/
+      SDL_DisplayYUVOverlay(cap->sdlOverlay, &cap->sdlRect);
+    }
+  else if(method==IO_METHOD_USERPTR)
+    {
+      printf("IO_METHOD_USEPTR not supported in process_image2\n");
+    }
+  else
+    {
+      fputc ('_', stdout);
+      fflush (stdout);
+    }
+}
+
 static char leerbuf[1024];
 
 /***************************************************************/
@@ -1018,8 +1136,8 @@ long_options [] = {
         { 0, 0, 0, 0 }
 };
 
-#define SDLWIDTH 720//1024//800
-#define SDLHEIGHT 576//768//600
+#define SDLWIDTH 1024//1024//800
+#define SDLHEIGHT 567//768//600
 
 int capMain(int argc,char ** argv)
 {
@@ -1106,21 +1224,31 @@ int capMain(int argc,char ** argv)
     }
   }
 
-#define CAMWIDTH 352
-#define CAMHEIGHT 288
-#define DauerSelect 120
+#define CAMWIDTH 352//640
+#define CAMHEIGHT 288//480
+#define DauerSelect 220
 
   cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat);
+  void(*fnk)(struct v4l_capture*,const void *,int,size_t);
+
+  if(Pixelformat)
+    {
+      fnk = processMJPEG;
+    }
+  else
+    {
+      fnk = process_image2;
+    }
 
   if(2==DEVICES)
     {
-      if(cap_cam_init(0,process_image2)<0)
+      if(cap_cam_init(0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
 	}
 
-      if(cap_cam_init(1,process_image2)<0)
+      if(cap_cam_init(1,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video1 failed!\n");
 	  return -1;
@@ -1136,7 +1264,7 @@ int capMain(int argc,char ** argv)
     }
   else
     {
-      if(cap_cam_init(0,process_image2)<0)
+      if(cap_cam_init(0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
