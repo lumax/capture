@@ -40,7 +40,7 @@
 
 #include <SDL/SDL.h>
 #include <SDL_image.h>
-#include "dsp_jpeg.h"
+#include <dsp_jpeg.h>
 #include "v4l_capture.h"
 
 #define  MULTIPLIKATOR 1 

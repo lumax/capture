@@ -23,9 +23,10 @@ CFLAGS+=-g -c -Wall
 #CFLAGS+=-DVERSIONSNUMMER=$(VERSIONSNUMMER)
 
 
-LDFLAGS+=-lSDL -lSDL_image
+LDFLAGS+=-lSDL -lSDL_image -ldsp_jpeg
 
-OBJS = main.o v4l_capture.o dsp_jpeg.o
+OBJS = main.o v4l_capture.o
+#dsp_jpeg.o
 #color.o utils.o
 
 

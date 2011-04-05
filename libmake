@@ -1,0 +1,18 @@
+PROJECT_NAME=libdsp_jpeg
+MAJOR=1
+MINOR=0
+VERSION=$(MAJOR).$(MINOR)
+
+DEFS+=-D_GNU_SOURCE=1 -D_REENTRANT
+INCLUDES+=
+LIBS+=
+
+
+CFLAGS+=-g -c -Wall -fPIC
+LDFLAGS+= -shared -Wl
+
+OBJS = dsp_jpeg.o
+
+EXE_ANHANG = .so.$(VERSION)
+
+include $(MAKE_DIR)/global.mak
