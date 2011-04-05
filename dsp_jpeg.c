@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef C6COMPILE
 #include <malloc.h>
+#endif
+
 #include <string.h>
 #include <time.h>
 #include "dsp_jpeg.h"
 
-#include "huffman.h"
+
 
 static int *LutYr = 0;
 static int *LutYg = 0;;
