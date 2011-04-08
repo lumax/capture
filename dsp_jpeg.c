@@ -309,7 +309,11 @@ int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
     ftopict convert;
     int err = 0;
     int isInitHuffman = 0;
+#ifdef C6COMPILE
+    decdata = (struct jpeg_decdata *) C6RUN_MEM_malloc(sizeof(struct jpeg_decdata));
+#else
     decdata = (struct jpeg_decdata *) malloc(sizeof(struct jpeg_decdata));
+#endif
     if (!decdata) {
 	err = -1;
 	goto error;
@@ -428,10 +432,17 @@ int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
 	*width = intwidth;
 	*height = intheight;
 	// BytesperPixel 2 yuyv , 3 rgb24 
+#ifdef C6COMPILE
+	*pic =
+	    (unsigned char *) C6RUN_MEM_realloc((unsigned char *) *pic,
+				      (/*size_t*/unsigned long) intwidth * (intheight +
+							   8) * 2);
+#else
 	*pic =
 	    (unsigned char *) realloc((unsigned char *) *pic,
 				      (/*size_t*/unsigned long) intwidth * (intheight +
 							   8) * 2);
+#endif
     }
 
 
@@ -1234,7 +1245,11 @@ FILE *file;
 unsigned char *ptdeb,*ptcur = buf;
 int sizein;
 char *name = NULL;
+#ifdef C6COMPILE
+name = C6RUN_MEM_calloc(80,1);
+#else
 name = calloc(80,1);
+#endif
 getPictureName (name, 1);
 file = fopen(name, "wb");
 if (file != NULL) {
@@ -1264,9 +1279,19 @@ get_pictureYV2(unsigned char *buf,int width,int height)
 FILE *foutpict;
 unsigned char *picture = NULL;
 char *name = NULL;
+#ifdef C6COMPILE
+name = C6RUN_MEM_calloc(80,1);
+#else
 name = calloc(80,1);
+#endif
+
 getPictureName (name, 0);
+
+#ifdef C6COMPILE
+picture = (unsigned char *)C6RUN_MEM_malloc(width*height*3*sizeof(char));
+#else
 picture = (unsigned char *)malloc(width*height*3*sizeof(char));
+#endif
 if(picture){
 	Pyuv422torgb24(buf, picture, width, height);
 }else{

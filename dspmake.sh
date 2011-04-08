@@ -1,4 +1,5 @@
 #!/bin/bash
+#source environment.sh
 DSPCCDIR=/opt/TI/C6Run_0_95_02_02/bin
 #CODESOURCELIBC=/opt/CodeSourcery/Sourcery_G++_Lite/arm-none-linux-gnueabi/libc/
 

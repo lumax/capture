@@ -22,6 +22,15 @@
 extern "C" {
 #endif
 
+#ifdef C6COMPILE
+  extern void    *C6RUN_MEM_malloc(size_t size);
+  extern void    *C6RUN_MEM_calloc(size_t nelem, size_t elsize);
+  extern void    *C6RUN_MEM_realloc(void *oldPtr,size_t size);
+  extern void    *C6RUN_MEM_memalign(size_t alignment, size_t size);
+  extern void     C6RUN_MEM_free(void* ptr);
+#endif
+
+
 int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
 		int *height);
 //int 

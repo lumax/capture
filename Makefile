@@ -6,7 +6,8 @@ LIBS+=
 #-L/usr/lib
 
 CFLAGS+= 
-LDFLAGS=-L$(ELDK_FS)/lib \
+LDFLAGS=-L.\
+	-L$(ELDK_FS)/lib \
 	-L$(ELDK_FS)/usr/lib \
 	-L$(ELDK_FS)/usr/local/lib \
 	-L$(STAGE)/lib \
@@ -23,14 +24,18 @@ CFLAGS+=-g -c -Wall
 #CFLAGS+=-DVERSIONSNUMMER=$(VERSIONSNUMMER)
 
 
-LDFLAGS+=-lSDL -lSDL_image -ldsp_jpeg
+LDFLAGS+=-lSDL -lSDL_image
 
-OBJS = main.o v4l_capture.o
-#dsp_jpeg.o
-#color.o utils.o
+OBJS+= main.o v4l_capture.o
 
+ifdef CROSS_COMPILE
+LIBS+=libc6_dsp_jpeg.lib
+else
+LDFLAGS+=-ldsp_jpeg
+endif
 
 include $(MAKE_DIR)/global.mak
+
 
 public:
 	cp $(PROJECT_NAME) $(ELDK_FS)/usr/work/capture/$(PROJECT_NAME)
