@@ -30,6 +30,7 @@ OBJS+= main.o v4l_capture.o
 
 ifdef CROSS_COMPILE
 LIBS+=libc6_dsp_jpeg.lib
+CFLAGS+= -DC6COMPILE
 else
 LDFLAGS+=-ldsp_jpeg
 endif

@@ -314,6 +314,21 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
   unsigned char *framebuffer;
   static unsigned char *fb0 = 0;
   static unsigned char *fb1 = 0;
+
+#ifdef C6COMPILE
+  if(!fb0) {
+    fb0 =
+    (unsigned char *) C6RUN_MEM_calloc(1,
+			     (size_t) cap->camWidth*(cap->camHeight +
+						   8) * 2);
+  }
+  if(!fb1) {
+    fb1 =
+    (unsigned char *) C6RUN_MEM_calloc(1,
+			     (size_t) cap->camWidth*(cap->camHeight +
+						   8) * 2);
+  }
+#else
   if(!fb0) {
     fb0 =
     (unsigned char *) calloc(1,
@@ -326,6 +341,8 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
 			     (size_t) cap->camWidth*(cap->camHeight +
 						   8) * 2);
   }
+#endif /* C6COMPILE */
+
   //if(cap->camnumber)
   //  return;
   if(counter<=50)
@@ -400,7 +417,7 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
       for(i=0;i<h;i++)
 	{
 	  memcpy(cap->sdlOverlay->pixels[0]+i*wMalVier+offset,	\
-		 framebuffer+alles,\ 
+		 framebuffer+alles,\
 		 wMalZwei);
 	  alles += w*2;
 	  }
@@ -817,16 +834,22 @@ static int uninit_device(struct v4l_capture * cap)
 
 static void init_read(struct v4l_capture * cap,unsigned int buffer_size)
 {
+#ifdef C6COMPILE
+        cap->buffers = C6RUN_MEM_calloc (1, sizeof (*cap->buffers));
+#else
         cap->buffers = calloc (1, sizeof (*cap->buffers));
-
+#endif
         if (!cap->buffers) {
                 fprintf (stderr, "Out of memory\n");
                 exit (EXIT_FAILURE);
         }
 
 	cap->buffers[0].length = buffer_size;
-	cap->buffers[0].start = malloc (buffer_size);
-
+#ifdef C6COMPILE
+	cap->buffers[0].start = C6RUN_MEM_malloc (buffer_size);
+#else
+	cap->buffers[0].start = malloc (buffer_size);	
+#endif
 	if (!cap->buffers[0].start) {
     		fprintf (stderr, "Out of memory\n");
             	exit (EXIT_FAILURE);
@@ -860,7 +883,11 @@ static int init_mmap(struct v4l_capture * cap)
                 return -1;
         }
 
-        cap->buffers = calloc (req.count, sizeof (*cap->buffers));
+#ifdef C6COMPILE
+	cap->buffers = C6RUN_MEM_calloc (req.count, sizeof (*cap->buffers));
+#else
+	cap->buffers = calloc (req.count, sizeof (*cap->buffers));
+#endif
 
         if (!cap->buffers) {
                 fprintf (stderr, "Out of memory\n");
@@ -923,7 +950,11 @@ static void init_userp(struct v4l_capture * cap,unsigned int buffer_size)
                 }
         }
 
-        cap->buffers = calloc (4, sizeof (*cap->buffers));
+#ifdef C6COMPILE
+	cap->buffers = C6RUN_MEM_calloc (4, sizeof (*cap->buffers));
+#else
+	cap->buffers = calloc (4, sizeof (*cap->buffers));
+#endif
 
         if (!cap->buffers) {
                 fprintf (stderr, "Out of memory\n");
