@@ -362,7 +362,7 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
 	{
 	  framebuffer = fb0;
 	}
-      i = jpeg_decode(&framebuffer,(unsigned char*)p,\
+      i = jpeg_decode(/*&framebuffer*/&fb0,(unsigned char*)p,	\
 		      &cap->camWidth,\
 		      &cap->camHeight);
 

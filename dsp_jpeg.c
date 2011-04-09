@@ -296,7 +296,7 @@ static int dec_checkmarker(void)
     return 0;
 }
 
-int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
+int jpeg_decode(unsigned char *pic, unsigned char *buf, int *width,
 		int *height)
 {
     struct jpeg_decdata *decdata;
@@ -428,18 +428,18 @@ int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
     /* if internal width and external are not the same or heigth too 
        and pic not allocated realloc the good size and mark the change 
        need 1 macroblock line more ?? */
-    if (intwidth != *width || intheight != *height || *pic == 0) {
+    if (intwidth != *width || intheight != *height || pic == 0) {
 	*width = intwidth;
 	*height = intheight;
 	// BytesperPixel 2 yuyv , 3 rgb24 
 #ifdef C6COMPILE
-	*pic =
-	    (unsigned char *) C6RUN_MEM_realloc((unsigned char *) *pic,
+	pic =
+	    (unsigned char *) C6RUN_MEM_realloc((unsigned char *) pic,
 				      (/*size_t*/unsigned long) intwidth * (intheight +
 							   8) * 2);
 #else
-	*pic =
-	    (unsigned char *) realloc((unsigned char *) *pic,
+	pic =
+	    (unsigned char *) realloc((unsigned char *) pic,
 				      (/*size_t*/unsigned long) intwidth * (intheight +
 							   8) * 2);
 #endif
@@ -555,7 +555,7 @@ int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
 	    break;
 	    
 	} // switch enc411
-	convert(decdata->out,*pic+y+x,pitch); 
+	convert(decdata->out,pic+y+x,pitch); 
 	}
     }
 

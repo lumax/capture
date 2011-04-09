@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 
-int jpeg_decode(unsigned char **pic, unsigned char *buf, int *width,
+int jpeg_decode(unsigned char *pic, unsigned char *buf, int *width,
 		int *height);
 //int 
 //get_picture(unsigned char *buf,int size);

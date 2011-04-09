@@ -5,8 +5,12 @@ DSPCCDIR=/opt/TI/C6Run_0_95_02_02/bin
 
 #$DSPCCDIR/./c6runlib-cc -isystem $CODESOURCELIBC/usr/local/include -isystem /usr -isystem $CODESOURCELIBC/usr/include -I$CODESOURCELIBC/usr/include -c -o dsp_utils.o dsp_utils.c
 
+#--C6Run:save_dsp_image
+#--C6Run:debug  
+#--C6Run:replace_malloc
+
 echo "c6 cc:"
-$DSPCCDIR/./c6runlib-cc -DC6COMPILE -c -o libc6_dsp_jpeg.o dsp_jpeg.c
+$DSPCCDIR/./c6runlib-cc --C6Run:debug -DC6COMPILE -c -o libc6_dsp_jpeg.o dsp_jpeg.c
 echo "c6 ar:"
 $DSPCCDIR/./c6runlib-ar rcs libc6_dsp_jpeg.lib libc6_dsp_jpeg.o
 
