@@ -362,10 +362,12 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
 	{
 	  framebuffer = fb0;
 	}
-      i = jpeg_decode(/*&framebuffer*/&fb0,(unsigned char*)p,	\
-		      &cap->camWidth,\
-		      &cap->camHeight);
-
+      counter++;
+      printf("DSP_test %i + %i = %i\n",5,counter,dsp_test(5,counter));
+   //&framebuffer
+            i = jpeg_decode(fb0,(unsigned char*)p,	\
+		      &cap->camWidth,			\
+				      &cap->camHeight);
       
       SDL_LockSurface(cap->mainSurface);
       SDL_LockYUVOverlay(cap->sdlOverlay);
