@@ -131,7 +131,7 @@ static void idctqtab __P((unsigned char *, PREC *));
 
 inline static void idct(int *in, int *out, int *quant, long off, int max);
 
-int is_huffman(unsigned char *buf);
+
 
 /*********************************/
 
@@ -296,6 +296,11 @@ static int dec_checkmarker(void)
     return 0;
 }
 
+int dsp_test(int a,int b)
+{
+  return a+b;
+}
+
 int jpeg_decode(unsigned char *pic, unsigned char *buf, int *width,
 		int *height)
 {
@@ -310,6 +315,7 @@ int jpeg_decode(unsigned char *pic, unsigned char *buf, int *width,
     int err = 0;
     int isInitHuffman = 0;
 #ifdef C6COMPILE
+    printf("DSP2\n");
     decdata = (struct jpeg_decdata *) C6RUN_MEM_malloc(sizeof(struct jpeg_decdata));
 #else
     decdata = (struct jpeg_decdata *) malloc(sizeof(struct jpeg_decdata));

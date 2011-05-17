@@ -1,7 +1,8 @@
 PROJECT_NAME=v4l_capture
 DEFS+=-D_GNU_SOURCE=1 -D_REENTRANT
 
-INCLUDES+=-I. -I/usr/include/SDL
+INCLUDES+=-I. -I$(ELDK_FS)/usr/include -I$(ELDK_FS)/usr/include/SDL
+#-I/usr/include/SDL
 LIBS+=
 #-L/usr/lib
 

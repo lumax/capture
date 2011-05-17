@@ -30,9 +30,13 @@ extern "C" {
   extern void     C6RUN_MEM_free(void* ptr);
 #endif
 
-
+int dsp_test(int a,int b);
 int jpeg_decode(unsigned char *pic, unsigned char *buf, int *width,
 		int *height);
+int is_huffman(unsigned char *buf);
+int get_picture(unsigned char *buf,int size);
+int get_pictureYV2(unsigned char *buf,int width,int height);
+  unsigned int Pyuv422torgb24(unsigned char * input_ptr, unsigned char * output_ptr, unsigned int image_width, unsigned int image_height);
 //int 
 //get_picture(unsigned char *buf,int size);
 //int
