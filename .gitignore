@@ -1,0 +1,26 @@
+## Lines starting with '#' are considered comments.
+## Ignore any file named foo.txt.
+#foo.txt
+## Ignore (generated) html files,
+#*.html
+## except foo.html which is maintained by hand.
+#!foo.html
+## Ignore objects and archives.
+*.[oa]
+v4l_capture
+capture
+color.c
+color.h
+debug.c65unlib-cc.log
+dsp_capture.c
+dsp_color.c
+dsp_color.h
+dsp_jpeg.c.001t.tu
+dsp_jpeg.dsp_stub.c
+dsp_jpeg.gpp_stub.c
+dsp_jpeg.pp.c
+dsp_jpeg.pp.c.001t.tu
+test.jpg
+utils.c
+utils.h
+v4l_capture.so
