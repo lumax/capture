@@ -257,7 +257,7 @@ static int readtables(int till, int *isDHT)
 	    break;
 
 	case M_DRI:
-	printf("find DRI \n");
+	  //printf("find DRI \n");
 	    l = getword();
 	    info.dri = getword();
 	    break;
