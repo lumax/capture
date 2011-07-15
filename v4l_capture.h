@@ -42,7 +42,7 @@ struct v4l_capture
 		       unsigned int camHeight,	\
 		       int zoom,		\
 		       int pixelFormat);
-  extern int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*,	\
+  extern int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
 						const void *,		\
 						int,		\
 						size_t));
@@ -50,6 +50,7 @@ struct v4l_capture
   extern int capMain(int args, char ** argv);
   extern int cap_read_frame(int camera);
   extern void cap_cam_addCrossX(int camNumber,int summand);
+  extern int cap_cam_enable50HzFilter(int camfd);
   
 #ifdef __cplusplus
 }

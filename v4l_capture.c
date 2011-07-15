@@ -143,13 +143,13 @@ static SDL_Surface * getCrossair2()
     }
 }
 */
-static void setOverlayArea(struct v4l_capture* cap,int Zoom)
+ static void setOverlayArea(struct v4l_capture* cap,int Zoom)
 {
   if(cap==0)
     return;
 
   cap->sdlRect.x = cap->mainSurface->w/2-cap->camWidth;
-  cap->sdlRect.y = 10;
+  cap->sdlRect.y = 0;
   cap->sdlRect.w = cap->camWidth*2;
   cap->sdlRect.h = cap->camHeight;
 
@@ -1336,7 +1336,7 @@ void cap_init(SDL_Surface * surface,		\
 				    mainSurface);  
 }
 
-int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*,	\
+int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
 				       const void *,		\
 				       int method,		\
 				       size_t len))
@@ -1447,4 +1447,34 @@ void cap_cam_addCrossX(int camNumber,int summand)
     {
       cap->camCrossX = cap->camWidth-2;
     }
+}
+
+int cap_cam_enable50HzFilter(int fd)
+{
+  struct v4l2_queryctrl queryctrl;
+  struct v4l2_control control;
+
+  memset (&queryctrl, 0, sizeof (queryctrl));
+  queryctrl.id = V4L2_CID_POWER_LINE_FREQUENCY;
+
+  if (-1 == ioctl (fd, VIDIOC_QUERYCTRL, &queryctrl)) {
+    if (errno != EINVAL) {
+      perror ("VIDIOC_QUERYCTRL");
+      return -1;
+    } else {
+      printf ("V4L2_CID_POWER_LINE_FREQUENCY is not supported\n");
+    }
+  } else if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
+    printf ("V4L2_CID_BRIGHTNESS is not supported\n");
+  } else {
+    memset (&control, 0, sizeof (control));
+        control.id = V4L2_CID_POWER_LINE_FREQUENCY;
+        control.value = V4L2_CID_POWER_LINE_FREQUENCY_50HZ;
+
+        if (-1 == ioctl (fd, VIDIOC_S_CTRL, &control)) {
+	  perror ("VIDIOC_S_CTRL");
+                return -1;
+        }
+  }
+  return 0;
 }
