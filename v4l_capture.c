@@ -161,6 +161,12 @@ static SDL_Surface * getCrossair2()
     }
 }
 
+void cap_cam_setOverlayBottomSide(int BottomSide)
+{
+  capt.sdlRect.y = -(capt.camHeight-BottomSide);
+  capt2.sdlRect.y = -(capt2.camHeight-BottomSide);
+}
+
 void cap_setZoom(int Zoom)
 {
   
