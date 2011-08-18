@@ -1433,6 +1433,28 @@ static int cap_cam_uninit(struct v4l_capture * cap)
   return 0;
 }
 
+void cap_cam_setCrossX(int camNumber,int val)
+{
+  struct v4l_capture * cap;
+  if(camNumber)
+    {
+      cap = &capt2;
+    }
+  else
+    {
+      cap = &capt;
+    }
+  cap->camCrossX = val;
+  if(cap->camCrossX < 2)
+    {
+      cap->camCrossX = 2;
+    }
+  else if(cap->camCrossX>cap->camWidth-2)
+    {
+      cap->camCrossX = cap->camWidth-2;
+    }
+}
+
 void cap_cam_addCrossX(int camNumber,int summand)
 {
   struct v4l_capture * cap;
