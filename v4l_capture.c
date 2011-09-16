@@ -1374,11 +1374,7 @@ int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
   cap->processFnk = fnk;
   cap->camWidth = camWidth;
   cap->camHeight = camHeight;
-  if(camera)
-    cap->camCrossX = 256;
-  //cap->camCrossX = camWidth/2;
-  else
-    cap->camCrossX = 544;
+  cap->camCrossX = camWidth/2;
   
   cap->sdlOverlay = theoverlay;
 
