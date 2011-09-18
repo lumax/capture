@@ -40,6 +40,8 @@ struct v4l_capture
   extern void cap_init(SDL_Surface * surface,	\
 		       unsigned int camWidth,	\
 		       unsigned int camHeight,	\
+		       unsigned int sdlWidth,	\
+		       unsigned int sdlHeight,	\
 		       int zoom,		\
 		       int pixelFormat);
   extern int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \

@@ -80,6 +80,8 @@ static int Zoom = 0;
 
 static unsigned int camWidth;
 static unsigned int camHeight;
+static unsigned int sdlWidth;
+static unsigned int sdlHeight;
 
 static struct v4l_capture capt = {.camnumber=0};
 static struct v4l_capture capt2 = {.camnumber=1};
@@ -1268,7 +1270,7 @@ int capMain(int argc,char ** argv)
 #define CAMHEIGHT 288//480
 #define DauerSelect 220
 
-  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,0,Pixelformat);
+  cap_init(mainSurface,CAMWIDTH,CAMHEIGHT,SDLWIDTH,SDLHEIGHT,0,Pixelformat);
   void(*fnk)(struct v4l_capture*,const void *,int,size_t);
 
   if(Pixelformat)
@@ -1327,6 +1329,8 @@ int capMain(int argc,char ** argv)
 void cap_init(SDL_Surface * surface,		\
 	      unsigned int cam_Width,		\
 	      unsigned int cam_Height,		\
+	      unsigned int sdl_Width,		\
+	      unsigned int sdl_Height,		\
 	      int zoom,				\
 	      int pixelFormat)
 {
@@ -1336,6 +1340,8 @@ void cap_init(SDL_Surface * surface,		\
   SDL_FreeYUVOverlay(theoverlay);
   camWidth = cam_Width;
   camHeight = cam_Height;
+  sdlWidth = sdl_Width;
+  sdlHeight = sdl_Height;
   theoverlay = SDL_CreateYUVOverlay(camWidth*2,			\
 				    camHeight,			\
 				    SDL_YUY2_OVERLAY,		\
@@ -1374,12 +1380,19 @@ int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
   cap->processFnk = fnk;
   cap->camWidth = camWidth;
   cap->camHeight = camHeight;
-  cap->camCrossX = camWidth/2;
-  
+  if(camera)
+    {
+      cap->camCrossX = sdlWidth/4;
+    }
+  else
+    {
+      cap->camCrossX = camWidth - (sdlWidth/4);
+    }
+
   cap->sdlOverlay = theoverlay;
 
   setOverlayArea(cap,Zoom);
-  
+
   ret = open_device (cap,&cap->fd);
   if(ret)
     return -1;
