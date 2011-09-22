@@ -40,7 +40,9 @@
 
 #include <SDL/SDL.h>
 #include <SDL_image.h>
+#ifdef EUMAX01_MJPEG_SUPPORT
 #include <dsp_jpeg.h>
+#endif
 #include "v4l_capture.h"
 
 #define  MULTIPLIKATOR 1 
@@ -322,7 +324,10 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
   unsigned char *framebuffer;
   static unsigned char *fb0 = 0;
   static unsigned char *fb1 = 0;
-
+#ifndef EUMAX01_MJPEG_SUPPORT
+  printf("NO MJPEG support\n");
+  return;
+#endif
 #ifdef C6COMPILE
   if(!fb0) {
     fb0 =
@@ -371,12 +376,13 @@ static void processMJPEG(struct v4l_capture* cap,const void * p,int method,size_
 	  framebuffer = fb0;
 	}
       counter++;
+#ifdef EUMAX01_MJPEG_SUPPORT
       printf("DSP_test %i + %i = %i\n",5,counter,dsp_test(5,counter));
-   //&framebuffer
-            i = jpeg_decode(fb0,(unsigned char*)p,	\
+
+	i = jpeg_decode(fb0,(unsigned char*)p,		\
 		      &cap->camWidth,			\
 				      &cap->camHeight);
-      
+#endif      
       SDL_LockSurface(cap->mainSurface);
       SDL_LockYUVOverlay(cap->sdlOverlay);
 
