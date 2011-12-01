@@ -1540,3 +1540,17 @@ int cap_cam_enable50HzFilter(int fd)
   }
   return 0;
 }
+
+int cap_cam_getFd(int camNumber)
+{
+  struct v4l_capture * cap;
+  if(camNumber)
+    {
+      cap = &capt2;
+    }
+  else
+    {
+      cap = &capt;
+    }
+  return cap->fd;
+}

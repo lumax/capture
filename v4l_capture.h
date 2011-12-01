@@ -56,6 +56,7 @@ struct v4l_capture
   extern int cap_cam_getCrossX(int camNumber);
   extern int cap_cam_enable50HzFilter(int camfd);
   extern void cap_cam_setOverlayBottomSide(int BottomSide);
+  extern int cap_cam_getFd(int camNumber);
   
 #ifdef __cplusplus
 }
