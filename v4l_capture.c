@@ -1134,8 +1134,8 @@ static int open_device(struct v4l_capture * cap,int * fd)
         struct stat st; 
 
         if (-1 == stat (cap->dev_name, &st)) {
-                fprintf (stderr, "Cannot identify '%s': %d, %s\n",
-                         cap->dev_name, errno, strerror (errno));
+	  //fprintf (stderr, "Cannot identify '%s': %d, %s\n",
+	  //             cap->dev_name, errno, strerror (errno));
                 return -1;
         }
 
@@ -1147,8 +1147,8 @@ static int open_device(struct v4l_capture * cap,int * fd)
         *fd = open (cap->dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
 
         if (-1 == *fd) {
-                fprintf (stderr, "Cannot open '%s': %d, %s\n",
-                         cap->dev_name, errno, strerror (errno));
+	  //                fprintf (stderr, "Cannot open '%s': %d, %s\n",
+	  //             cap->dev_name, errno, strerror (errno));
                 return -1;
         }
 	return 0;
