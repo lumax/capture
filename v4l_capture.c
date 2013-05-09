@@ -1290,13 +1290,13 @@ int capMain(int argc,char ** argv)
 
   if(2==DEVICES)
     {
-      if(cap_cam_init(0,fnk)<0)
+      if(cap_cam_init(0,0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
 	}
 
-      if(cap_cam_init(1,fnk)<0)
+      if(cap_cam_init(1,0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video1 failed!\n");
 	  return -1;
@@ -1312,7 +1312,7 @@ int capMain(int argc,char ** argv)
     }
   else
     {
-      if(cap_cam_init(0,fnk)<0)
+      if(cap_cam_init(0,0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
@@ -1354,10 +1354,11 @@ void cap_init(SDL_Surface * surface,		\
 				    mainSurface);  
 }
 
-int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
-				       const void *,		\
-				       int method,		\
-				       size_t len))
+int cap_cam_init(int camera,unsigned int CrossXLimit,		\
+		 void(*fnk)(struct v4l_capture*,		\
+			    const void *,			\
+			    int method,				\
+			    size_t len))
 {
   int ret=0;
   struct v4l_capture * cap;
@@ -1386,6 +1387,7 @@ int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
   cap->processFnk = fnk;
   cap->camWidth = camWidth;
   cap->camHeight = camHeight;
+  cap->camCrossXLimit = CrossXLimit;
 
   if(camera)
     {
@@ -1479,13 +1481,13 @@ void cap_cam_setCrossX(int camNumber,int val)
       cap = &capt;
     }
   cap->camCrossX = val;
-  if(cap->camCrossX < 2)
+  if(cap->camCrossX < (2+cap->camCrossXLimit))
     {
-      cap->camCrossX = 2;
+      cap->camCrossX = (2+cap->camCrossXLimit);
     }
-  else if(cap->camCrossX>cap->camWidth-2)
+  else if(cap->camCrossX>cap->camWidth-(2+cap->camCrossXLimit))
     {
-      cap->camCrossX = cap->camWidth-2;
+      cap->camCrossX = cap->camWidth-(2+cap->camCrossXLimit);
     }
 }
 
@@ -1501,13 +1503,13 @@ void cap_cam_addCrossX(int camNumber,int summand)
       cap = &capt;
     }
   cap->camCrossX +=summand;
-  if(cap->camCrossX < 2)
+  if(cap->camCrossX < (2+cap->camCrossXLimit))
     {
-      cap->camCrossX = 2;
+      cap->camCrossX = (2+cap->camCrossXLimit);
     }
-  else if(cap->camCrossX>cap->camWidth-2)
+  else if(cap->camCrossX>cap->camWidth-(2+cap->camCrossXLimit))
     {
-      cap->camCrossX = cap->camWidth-2;
+      cap->camCrossX = cap->camWidth-(2+cap->camCrossXLimit);
     }
 }
 

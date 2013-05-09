@@ -34,6 +34,7 @@ struct v4l_capture
   int camWidth;
   int camHeight;
   int camCrossX;
+  unsigned int camCrossXLimit;
 };
 
   extern void cap_setZoom(int Zoom);
@@ -44,10 +45,11 @@ struct v4l_capture
 		       unsigned int sdlHeight,	\
 		       int zoom,		\
 		       int pixelFormat);
-  extern int cap_cam_init(int camera,void(*fnk)(struct v4l_capture*, \
-						const void *,		\
-						int,		\
-						size_t));
+  extern int cap_cam_init(int camera,unsigned int CrossXLimit,		\
+			  void(*fnk)(struct v4l_capture*,		\
+				     const void *,			\
+				     int,				\
+				     size_t));
   extern int cap_uninit();
   extern int capMain(int args, char ** argv);
   extern int cap_read_frame(int camera);
