@@ -53,6 +53,7 @@ struct v4l_capture
   extern int cap_uninit();
   extern int capMain(int args, char ** argv);
   extern int cap_read_frame(int camera);
+  extern void cap_cam_setCrossXLimit(int camNumber, int val);
   extern void cap_cam_addCrossX(int camNumber,int summand);
   extern void cap_cam_setCrossX(int camNumber,int val);
   extern int cap_cam_getCrossX(int camNumber);
