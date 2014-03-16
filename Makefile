@@ -3,7 +3,7 @@ DEFS+=-D_GNU_SOURCE=1 -D_REENTRANT
 
 INCLUDES+=-I. -I$(ELDK_FS)/usr/include -I$(ELDK_FS)/usr/include/SDL
 #-I/usr/include/SDL
-LIBS+=
+LIBS+=-lSDL -lSDL_image
 #-L/usr/lib
 
 CFLAGS+= 
@@ -13,8 +13,11 @@ LDFLAGS=-L.\
 	-L$(ELDK_FS)/usr/local/lib \
 	-L$(STAGE)/lib \
 	-L$(STAGE)/usr/local/lib \
+	-L/usr/lib/i386-linux-gnu \
 	-Wl,-rpath-link -Wl,$(STAGE)/usr/local/lib \
 	-Wl,-rpath -Wl,$(ELDK_FS)/usr/local/lib \
+	-Wl,-rpath-link -Wl,/usr/lib/i386-linux-gnu \
+	-Wl,-rpath -Wl,/usr/lib/i386-linux-gnu \
 
 
 CFLAGS+=-g -c -Wall
@@ -25,7 +28,7 @@ CFLAGS+=-g -c -Wall
 #CFLAGS+=-DVERSIONSNUMMER=$(VERSIONSNUMMER)
 
 
-LDFLAGS+=-lSDL -lSDL_image
+LDFLAGS+=
 
 OBJS+= main.o v4l_capture.o
 
