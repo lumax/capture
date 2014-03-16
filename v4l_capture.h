@@ -46,6 +46,7 @@ struct v4l_capture
 		       int zoom,		\
 		       int pixelFormat);
   extern int cap_cam_init(int camera,unsigned int CrossXLimit,		\
+			  int CamInTheMiddle,					\
 			  void(*fnk)(struct v4l_capture*,		\
 				     const void *,			\
 				     int,				\

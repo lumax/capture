@@ -61,7 +61,7 @@ struct buffer {
 
 
 
-static void setOverlayArea(struct v4l_capture* cap,int Zoom);
+static void setOverlayArea(struct v4l_capture* cap,int Zoom,int CamInTheMiddle);
 static void errno_exit(const char * err);
 static void errno_print(const char * err);
 static int xioctl(struct v4l_capture * cap,int request,void * arg);
@@ -147,12 +147,15 @@ static SDL_Surface * getCrossair2()
     }
 }
 */
- static void setOverlayArea(struct v4l_capture* cap,int Zoom)
+ static void setOverlayArea(struct v4l_capture* cap,int Zoom,int camInTheMiddle)
 {
   if(cap==0)
     return;
 
-  cap->sdlRect.x = cap->mainSurface->w/2-cap->camWidth;
+  if(camInTheMiddle)
+    cap->sdlRect.x = cap->mainSurface->w/2-cap->camWidth/2;
+  else
+    cap->sdlRect.x = cap->mainSurface->w/2-cap->camWidth;
   cap->sdlRect.y = 0;
   cap->sdlRect.w = cap->camWidth*2;
   cap->sdlRect.h = cap->camHeight;
@@ -1290,13 +1293,13 @@ int capMain(int argc,char ** argv)
 
   if(2==DEVICES)
     {
-      if(cap_cam_init(0,0,fnk)<0)
+      if(cap_cam_init(0,0,0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
 	}
 
-      if(cap_cam_init(1,0,fnk)<0)
+      if(cap_cam_init(1,0,0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video1 failed!\n");
 	  return -1;
@@ -1312,7 +1315,7 @@ int capMain(int argc,char ** argv)
     }
   else
     {
-      if(cap_cam_init(0,0,fnk)<0)
+      if(cap_cam_init(0,0,0,fnk)<0)
 	{
 	  printf("cap_cam_init for /dev/video0 failed!\n");
 	  return -1;
@@ -1355,6 +1358,7 @@ void cap_init(SDL_Surface * surface,		\
 }
 
 int cap_cam_init(int camera,unsigned int CrossXLimit,		\
+		 int CamInTheMiddle,				\
 		 void(*fnk)(struct v4l_capture*,		\
 			    const void *,			\
 			    int method,				\
@@ -1400,7 +1404,7 @@ int cap_cam_init(int camera,unsigned int CrossXLimit,		\
 
   cap->sdlOverlay = theoverlay;
 
-  setOverlayArea(cap,Zoom);
+  setOverlayArea(cap,Zoom,CamInTheMiddle);
 
   ret = open_device (cap,&cap->fd);
   if(ret)
