@@ -22,6 +22,7 @@ struct v4l_capture
   int             fd;
   struct buffer * buffers;
   unsigned int    n_buffers;
+  int actBufferIndex;
   int cam;
   SDL_Surface * mainSurface;
   SDL_Overlay * sdlOverlay;
@@ -53,7 +54,11 @@ struct v4l_capture
 				     size_t));
   extern int cap_uninit();
   extern int capMain(int args, char ** argv);
+  extern void cap_processCapFunction(int camera);
+  extern void cap_triggerForRead(int camera);
+  extern void cap_blockForReadReady(int camera);
   extern int cap_read_frame(int camera);
+  extern int cap_read_frame_into_buffer(int camera);
   extern void cap_cam_setCrossXLimit(int camNumber, int val);
   extern void cap_cam_addCrossX(int camNumber,int summand);
   extern void cap_cam_setCrossX(int camNumber,int val);

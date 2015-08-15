@@ -34,6 +34,10 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
+#include <pthread.h>
+#include <semaphore.h>
+#include <sched.h>
+
 #include <asm/types.h>          /* for videodev2.h */
 
 #include <linux/videodev2.h>
@@ -59,7 +63,13 @@ struct buffer {
         size_t                  length;
 };
 
+static pthread_t thread_cam0;
+static pthread_t thread_cam1;
 
+static sem_t cam0_trigger_sem;
+static sem_t cam0_ready_sem;
+static sem_t cam1_trigger_sem;
+static sem_t cam1_ready_sem;
 
 static void setOverlayArea(struct v4l_capture* cap,int Zoom,int CamInTheMiddle);
 static void errno_exit(const char * err);
@@ -68,6 +78,7 @@ static int xioctl(struct v4l_capture * cap,int request,void * arg);
 static void process_image(struct v4l_capture* cap,const void * p,int method,size_t len);
 static void process_image2(struct v4l_capture* cap,const void * p,int method,size_t len);
 static int read_frame(struct v4l_capture * cap);
+static int read_frame_into_buffer(struct v4l_capture * cap);
 static int stop_capturing(struct v4l_capture * cap);
 static int start_capturing(struct v4l_capture * cap);
 static int uninit_device(struct v4l_capture * cap);
@@ -660,6 +671,218 @@ static int read_frame(struct v4l_capture * cap)
 		if (-1 == xioctl (cap, VIDIOC_QBUF, &buf))
 			errno_exit ("VIDIOC_QBUF");
 
+		break;
+	}
+
+	return 1;
+}
+
+
+void *cam1_thread_function( void *ptr )
+{
+  int ret;
+  int caminfo = 1;
+
+  //we can set one or more bits here, each one representing a single CPU
+  cpu_set_t cpuset;
+  //the CPU we whant to use
+  int cpu = 2;
+
+  CPU_ZERO(&cpuset);       //clears the cpuset
+  CPU_SET( cpu , &cpuset); //set CPU 2 on cpuset
+
+  // bind process to processor 2
+  if (pthread_setaffinity_np(pthread_self(), sizeof(cpuset),
+			     &cpuset) <0) {
+    perror("pthread_setaffinity_np");
+  }
+
+  for(;;)
+    {
+      //printf("cam%i_thread_function \n",caminfo);
+      ret = sem_wait(&cam1_ready_sem);//block ready sem
+      if(ret){
+	fprintf(stderr,"Error - sem_wait(ready) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+      //printf("cam%i_thread_function wait for extern trigger\n",caminfo);
+      ret = sem_wait(&cam1_trigger_sem);//wait for extern trigger
+      if(ret){
+	fprintf(stderr,"Error - sem_wait(trigger) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+
+      ret = sem_post(&cam1_trigger_sem);//trigger sem wieder sperren
+      if(ret){
+	fprintf(stderr,"Error - sem_post(trigger) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+
+      //printf("cam%i_thread_function Aktion\n",caminfo);
+      if(-1==cap_read_frame_into_buffer(caminfo))
+	{
+	  printf("error on polling camera%i\n",caminfo);
+	}
+
+      ret = sem_post(&cam1_ready_sem);//ready sem freigeben
+      if(ret){
+	fprintf(stderr,"Error - sem_post(ready) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+    }
+  return NULL;
+}
+
+void *cam0_thread_function( void *ptr )
+{
+  int ret;
+  int caminfo = 0;
+
+    //we can set one or more bits here, each one representing a single CPU
+  cpu_set_t cpuset;
+  //the CPU we whant to use
+  int cpu = 1;
+
+  CPU_ZERO(&cpuset);       //clears the cpuset
+  CPU_SET( cpu , &cpuset); //set CPU 2 on cpuset
+
+  // bind process to processor 1
+  if (pthread_setaffinity_np(pthread_self(), sizeof(cpuset),
+			     &cpuset) <0) {
+    perror("pthread_setaffinity_np");
+  }
+
+  for(;;)
+    {
+      //printf("cam%i_thread_function \n",caminfo);
+      ret = sem_wait(&cam0_ready_sem);//block ready sem
+      if(ret){
+	fprintf(stderr,"Error - sem_wait(ready) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+      //printf("cam%i_thread_function wait for extern trigger\n",caminfo);
+      ret = sem_wait(&cam0_trigger_sem);//wait for extern trigger
+      if(ret){
+	fprintf(stderr,"Error - sem_wait(trigger) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+
+      ret = sem_post(&cam0_trigger_sem);//trigger sem wieder sperren
+      if(ret){
+	fprintf(stderr,"Error - sem_post(trigger) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+
+      //printf("cam%i_thread_function Aktion\n",caminfo);
+      if(-1==cap_read_frame_into_buffer(caminfo))
+	{
+	  printf("error on polling camera%i\n",caminfo);
+	}
+
+      ret = sem_post(&cam0_ready_sem);//ready sem freigeben
+      if(ret){
+	fprintf(stderr,"Error - sem_post(ready) in cam%i_thread return code: %d\n",caminfo,ret);
+      }
+    }
+  return NULL;
+}
+
+void cap_triggerForRead(int camera)
+{
+  int ret;
+  if(camera){
+    ret = sem_post(&cam1_trigger_sem);
+  }else{
+    ret = sem_post(&cam0_trigger_sem);
+  }
+  if(ret){
+    fprintf(stderr,"Error - sem_post() camera %i return code: %d\n",camera,ret);
+  }
+}
+
+void cap_blockForReadReady(int camera)
+{
+  int ret;
+  if(camera){
+    ret = sem_wait(&cam1_trigger_sem);
+  }else{
+    ret = sem_wait(&cam0_trigger_sem);
+  }
+  if(ret){
+    fprintf(stderr,"Error - sem_wait() camera %i return code: %d\n",camera,ret);
+  }
+}
+
+void cap_processCapFunction(int camera)
+{
+  struct v4l_capture * cap = 0;
+  if(camera)
+    {
+      cap = &capt2;
+      (*cap->processFnk)(cap,						\
+			 cap->buffers[cap->actBufferIndex].start,	\
+			 IO_METHOD_MMAP,				\
+			 cap->buffers[cap->actBufferIndex].length);
+    }
+  else
+    {
+      cap = &capt;
+      (*cap->processFnk)(cap,						\
+			 cap->buffers[cap->actBufferIndex].start,	\
+			 IO_METHOD_MMAP,				\
+			 cap->buffers[cap->actBufferIndex].length);
+    }
+}
+
+/*! \brief read camera-frame into Buffer
+ *
+ * \param camera The cam to read
+ *  \return 1 on success, 0 on EAGAIN, -1 on error
+ */
+int cap_read_frame_into_buffer(int camera)
+{
+  if(camera)
+    return read_frame_into_buffer(&capt2);
+  else
+    return read_frame_into_buffer(&capt);
+}
+
+static int read_frame_into_buffer(struct v4l_capture * cap)
+{
+        struct v4l2_buffer buf;
+	unsigned int i;
+
+	switch (cap->io) {
+	case IO_METHOD_READ:
+	  printf("read_frame_into_buffer does not support IO_METHOD_READ\n");
+		break;
+
+	case IO_METHOD_MMAP:
+		CLEAR (buf);
+
+		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		buf.memory = V4L2_MEMORY_MMAP;
+
+		if (-1 == xioctl (cap, VIDIOC_DQBUF, &buf)) {
+		  switch (errno) {
+			case EAGAIN:
+			  return 0;
+
+			case EIO:
+				/* Could ignore EIO, see spec. */
+
+				/* fall through */
+
+			default:
+				errno_exit ("VIDIOC_DQBUF");
+			}
+		}
+
+                assert (buf.index < cap->n_buffers);
+
+		cap->actBufferIndex = buf.index;
+	        //(*cap->processFnk)(cap,cap->buffers[buf.index].start,IO_METHOD_MMAP,cap->buffers[buf.index].length);
+
+		if (-1 == xioctl (cap, VIDIOC_QBUF, &buf))
+			errno_exit ("VIDIOC_QBUF");
+
+		break;
+
+	case IO_METHOD_USERPTR:
+	  printf("read_frame_into_buffer does not support IO_METHOD_UDERPTR\n");
 		break;
 	}
 
@@ -1357,6 +1580,8 @@ void cap_init(SDL_Surface * surface,		\
 				    mainSurface);  
 }
 
+static int useThreads = 0;
+
 int cap_cam_init(int camera,unsigned int CrossXLimit,		\
 		 int CamInTheMiddle,				\
 		 void(*fnk)(struct v4l_capture*,		\
@@ -1382,6 +1607,7 @@ int cap_cam_init(int camera,unsigned int CrossXLimit,		\
   cap->fd              = -1;
   cap->buffers         = 0;
   cap->n_buffers       = 0;
+  cap->actBufferIndex  = 0;
   cap->cam             =CAM_OTHER;
   cap->mainSurface = mainSurface;
   cap->sdlRect.w = 0;
@@ -1417,7 +1643,48 @@ int cap_cam_init(int camera,unsigned int CrossXLimit,		\
   ret = start_capturing (cap);
   if(ret)
     return -3;
-  
+
+  if(1==useThreads)
+    {
+      if(camera)
+	{
+	  ret = sem_init(&cam1_trigger_sem,0,0);//nur dieser Process, sem ist locked
+	  if(ret){
+	    fprintf(stderr,"Error - sem_init() camera 1 return code: %d\n",ret);
+	    return -5;
+	  }
+	  ret = sem_init(&cam1_ready_sem,0,1);//nur dieser Process, sem ist offen
+	  if(ret){
+	    fprintf(stderr,"Error - sem_init() camera 1 return code: %d\n",ret);
+	    return -6;
+	  }
+	  //threadCam1
+	  ret = pthread_create( &thread_cam1, NULL, cam1_thread_function, (void*)&capt2);
+	  if(ret){
+	    fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
+	    return -4;
+	  }
+	}
+      else
+	{
+	  ret = sem_init(&cam0_trigger_sem,0,0);//nur dieser Process, trigger sem ist locked
+	  if(ret){
+	    fprintf(stderr,"Error - sem_init() camera 1 return code: %d\n",ret);
+	    return -5;
+	  }
+	  ret = sem_init(&cam0_ready_sem,0,1);//nur dieser Process, sem ist offen
+	  if(ret){
+	    fprintf(stderr,"Error - sem_init() camera 1 return code: %d\n",ret);
+	    return -6;
+	  }
+	  //threadCam0
+	  ret = pthread_create( &thread_cam0, NULL, cam0_thread_function, (void*)&capt);
+	  if(ret){
+	    fprintf(stderr,"Error - pthread_create() return code: %d\n",ret);
+	    return -4;
+	  }
+	}
+    }
   return cap->fd;
 }
 
